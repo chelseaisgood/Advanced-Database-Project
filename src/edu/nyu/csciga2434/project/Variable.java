@@ -16,6 +16,18 @@ public class Variable {
     public Variable(int id){
         this.id = id;
         this.value = id * 10;
-
     }
+
+    public int getID(){
+        return this.id;
+    }
+
+    public int getValue(){
+        return this.value;
+    }
+
+    public String variableOutput(){
+        return "x"+this.id+" has value of "+this.value+".\n";
+    }
+
 }

@@ -56,4 +56,49 @@ public class TransactionManager {
         }
     }
 
+    private void dump() {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            System.out.println("At site " + i + ":");
+            System.out.println(sites.get(i).dumpOutput());//
+        }
+    }
+
+    private void dump(int index) {
+        if (sites.containsKey(index)) {
+            System.out.println("At site " + index + ":");
+            System.out.print(sites.get(index).dumpOutput());
+        } else {
+            throw new IndexOutOfBoundsException();
+        }
+    }
+
+    private void dumpVariable(int index) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            ArrayList<Variable> variableList = (ArrayList<Variable>) sites.get(i).getVariableList();
+            for (int j = 0; j < variableList.size(); j++) {
+                if (variableList.get(j).getID() == index) {
+                    System.out.println("At site " + i + ":");
+                    System.out.println(variableList.get(j).variableOutput());
+                }
+            }
+        }
+    }
+
+    private void endTransaction() {
+
+    }
+
+    private void failSite() {
+
+    }
+
+    private void recoverSite() {
+
+    }
+
+    public void readCommand(String commandLine) {
+
+    }
+
+
 }

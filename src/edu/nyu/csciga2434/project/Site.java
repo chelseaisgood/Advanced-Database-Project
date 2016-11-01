@@ -41,4 +41,17 @@ public class Site {
             }
         }
     }
+
+    public String dumpOutput() {
+        StringBuffer dumpOutput = new StringBuffer();
+        for (int i = 0; i < variableList.size(); i++) {
+            dumpOutput.append("x").append(variableList.get(i).getID()).append(" has value of ").append(
+                    variableList.get(i).getValue()).append(".\n");
+        }
+        return dumpOutput.toString();
+    }
+
+    public List<Variable> getVariableList() {
+        return this.variableList;
+    }
 }
