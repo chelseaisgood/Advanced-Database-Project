@@ -1,5 +1,7 @@
 package edu.nyu.csciga2434.project;
 
+import java.util.*;
+
 /**
  * User: Minda Fang
  * Date: 9/30/16
@@ -15,5 +17,43 @@ package edu.nyu.csciga2434.project;
  */
 
 public class TransactionManager {
-	
+
+    private static final int DEFAULT_SITE_TOTAL_NUMBER = 10;
+
+    private Map<Integer, Site> sites;
+    private Map<Integer, Transaction> currentTransactions;
+    private int time;
+
+    public TransactionManager() {
+        sites = new HashMap<>();
+        time = 0;
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            sites.put(i, new Site(i));
+        }
+
+        currentTransactions = new HashMap<>();
+    }
+
+    private void begin(int transactionID, TypeOfTransaction typeOfTransaction) {
+        if (!currentTransactions.containsKey(transactionID)) {
+            boolean isReadyOnly;
+            if (typeOfTransaction == TypeOfTransaction.Read_Write) {
+                isReadyOnly = false;
+            } else {
+                isReadyOnly = true;
+            }
+            Transaction newTransaction = new Transaction(transactionID, isReadyOnly, time);
+            currentTransactions.put(transactionID, newTransaction);
+        }
+    }
+
+    private void read(int transactionID, int variable) {
+        if (currentTransactions.containsKey(transactionID)) {
+            Transaction currTransaction = currentTransactions.get(transactionID);
+            if (currTransaction.getTransactionType() == TypeOfTransaction.Read_Only) {
+
+            } else {}
+        }
+    }
+
 }

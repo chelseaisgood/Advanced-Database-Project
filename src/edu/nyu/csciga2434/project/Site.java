@@ -14,7 +14,6 @@ import java.util.*;
 
 public class Site {
 
-    private static final int DEFAULT_SITE_TOTAL_NUMBER = 10;
     private static final int DEFAULT_VARIABLE_TOTAL_NUMBER = 20;
 
     private final int id;
