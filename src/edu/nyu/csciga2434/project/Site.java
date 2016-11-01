@@ -26,12 +26,12 @@ public class Site {
         this.id = id;
         this.variableList = new ArrayList<>();
         this.lockTable = new LockTable();
-        BuildingSite();
+        BuildSite();
         this.ifSiteWorking = true;
     }
 
-    private void BuildingSite(){
-        // call BuildingSite() when the site is first set and include all the variables that should be initially held by this site.
+    private void BuildSite(){
+        // call BuildSite() when the site is first set and include all the variables that should be initially held by this site.
         for (int i = 1; i <= DEFAULT_VARIABLE_TOTAL_NUMBER; i++){
             if(i % 2 == 0){
                 this.variableList.add(new Variable(i));

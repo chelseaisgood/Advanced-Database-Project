@@ -18,4 +18,17 @@ public class LockOnVariable {
         this.variableID = variableID;
         this.lockType = lockType;
     }
+
+    public int getTransactionID() {
+        return this.transactionID;
+    }
+
+    public int getVariableID() {
+        return this.variableID;
+    }
+
+    public TypeOfLock getLockType() {
+        return this.lockType;
+    }
+
 }
