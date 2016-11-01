@@ -9,7 +9,13 @@ package edu.nyu.csciga2434.project;
 
 public class LockOnVariable {
 
-    public LockOnVariable(){
+    private final int transactionID;
+    private final int variableID;
+    private final TypeOfLock lockType;
 
+    public LockOnVariable(int transactionID, int variableID, TypeOfLock lockType){
+        this.transactionID = transactionID;
+        this.variableID = variableID;
+        this.lockType = lockType;
     }
 }
