@@ -37,6 +37,7 @@ public class TransactionManager {
 
         currentTransactions = new HashMap<>();
         Map<Integer, ArrayList<Operation>> waitList = new HashMap<>();
+
     }
 
     public void readCommand(String commandLine) {
@@ -47,9 +48,9 @@ public class TransactionManager {
         for (String op : operations) {
             System.out.println(op);
             if (op.startsWith("begin(")) {
-                begin(Integer.parseInt(op.substring(6, op.length() - 1)), TypeOfTransaction.Read_Write);
+                begin(Integer.parseInt(op.substring(7, op.length() - 1)), TypeOfTransaction.Read_Write);
             } else if (op.startsWith("beginRO(")) {
-                begin(Integer.parseInt(op.substring(8, op.length() - 1)), TypeOfTransaction.Read_Only);
+                begin(Integer.parseInt(op.substring(9, op.length() - 1)), TypeOfTransaction.Read_Only);
             } else if (op.startsWith("R(")) {
                 String[] t = op.substring(2, op.length() - 1).split(",");
                 readVariableValue(Integer.parseInt(t[0].substring(1)), Integer.parseInt(t[1].substring(t[1].indexOf("x") + 1)));
@@ -76,6 +77,28 @@ public class TransactionManager {
             endTransaction(endTransactionList.get(i));
         }
     }
+
+
+    private void begin(int transactionID, TypeOfTransaction typeOfTransaction) {
+        if (!currentTransactions.containsKey(transactionID)) {
+            boolean isReadOnly;
+            if (typeOfTransaction == TypeOfTransaction.Read_Write) {
+                isReadOnly = false;
+            } else {
+                isReadOnly = true;
+            }
+            Transaction newTransaction = new Transaction(transactionID, isReadOnly, time);
+            currentTransactions.put(transactionID, newTransaction);
+            if (isReadOnly) {
+                System.out.println("[Success] Read-only transaction T" + transactionID + " has been successfully initiated..");
+            } else {
+                System.out.println("[Success] Transaction T" + transactionID + " has been successfully initiated..");
+            }
+        } else {
+            System.out.println("[Failure] Transaction T" + transactionID + " might be already in progress.");
+        }
+    }
+
 
     private void endTransaction(Integer transactionID) {
         if (this.currentTransactions.containsKey(transactionID)) {
@@ -118,25 +141,15 @@ public class TransactionManager {
         //TODO
     }
 
-    private void begin(int transactionID, TypeOfTransaction typeOfTransaction) {
-        if (!currentTransactions.containsKey(transactionID)) {
-            boolean isReadyOnly;
-            if (typeOfTransaction == TypeOfTransaction.Read_Write) {
-                isReadyOnly = false;
-            } else {
-                isReadyOnly = true;
-            }
-            Transaction newTransaction = new Transaction(transactionID, isReadyOnly, time);
-            currentTransactions.put(transactionID, newTransaction);
-        }
-    }
 
     private void read(int transactionID, int variable, TypeOfTransaction typeOfTransaction) {
         if (currentTransactions.containsKey(transactionID)) {
             Transaction currTransaction = currentTransactions.get(transactionID);
             if (currTransaction.getTransactionType() == TypeOfTransaction.Read_Only) {
-
-            } else {}
+                //TODO
+            } else {
+                //TODO
+            }
         }
     }
 
@@ -167,10 +180,6 @@ public class TransactionManager {
             }
         }
     }
-
-
-
-
 
 
 }

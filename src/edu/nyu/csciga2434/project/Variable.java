@@ -30,4 +30,7 @@ public class Variable {
         return "x"+this.id+" has value of "+this.value+".\n";
     }
 
+    public void setCurrValue(int value) {
+        //TODO
+    }
 }
