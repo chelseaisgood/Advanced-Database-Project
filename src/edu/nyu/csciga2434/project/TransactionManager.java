@@ -1,6 +1,7 @@
 package edu.nyu.csciga2434.project;
 
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -127,31 +128,39 @@ public class TransactionManager {
     }
 
     private void readVariableValue(int transactionID, int variable) {
-        if (currentTransactions.containsKey(transactionID)) {
+        if (currentTransactions.containsKey(transactionID) && variable >= 1 && variable <= 20) {
             Transaction t = currentTransactions.get(transactionID);
             if (t.getTransactionType() == TypeOfTransaction.Read_Only) {
                 read(transactionID, variable, TypeOfTransaction.Read_Only);
             } else {
                 read(transactionID, variable, TypeOfTransaction.Read_Write);
             }
+        } else {
+            System.out.println("[Failure] Please check if such transaction T" + transactionID + " has began or such variable x" + variable + " exists.");
         }
     }
+
+
+    private void read(int transactionID, int variable, TypeOfTransaction typeOfTransaction) {
+        Transaction transaction = currentTransactions.get(transactionID);
+        if (typeOfTransaction == TypeOfTransaction.Read_Only) {
+            boolean alreadyRead = false;
+            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER && !alreadyRead; i++) {
+                Site tempSite = sites.get(i);
+                if (tempSite.getIfSiteWorking()) {
+                    //TODO
+                }
+            }
+        } else {
+
+        }
+    }
+
 
     private void writeVariableValue(int transactionID, int variable, int value) {
         //TODO
     }
 
-
-    private void read(int transactionID, int variable, TypeOfTransaction typeOfTransaction) {
-        if (currentTransactions.containsKey(transactionID)) {
-            Transaction currTransaction = currentTransactions.get(transactionID);
-            if (currTransaction.getTransactionType() == TypeOfTransaction.Read_Only) {
-                //TODO
-            } else {
-                //TODO
-            }
-        }
-    }
 
     private void dump() {
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
@@ -163,7 +172,7 @@ public class TransactionManager {
     private void dump(int index) {
         if (sites.containsKey(index)) {
             System.out.println("At site " + index + ":");
-            System.out.print(sites.get(index).dumpOutput());
+            System.out.println(sites.get(index).dumpOutput());
         } else {
             throw new IndexOutOfBoundsException();
         }

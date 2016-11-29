@@ -21,6 +21,10 @@ public class Site {
     private LockTable lockTableOfSite;
     private boolean ifSiteWorking;
 
+    public boolean getIfSiteWorking() {
+        return ifSiteWorking;
+    }
+
     public Site(int id){
         this.id = id;
         this.variableList = new ArrayList<>();
