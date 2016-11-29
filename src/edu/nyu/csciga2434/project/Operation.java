@@ -12,9 +12,9 @@ public class Operation {
     private final int value;
     private final int variableID;
     private final int time;
-    private final int operationType;
+    private final TypeOfOperation operationType;
 
-    public Operation(int value, int variableID, int time, int operationType) {
+    public Operation(int value, int variableID, int time, TypeOfOperation operationType) {
         this.value = value;
         this.variableID = variableID;
         this.time = time;
@@ -33,7 +33,7 @@ public class Operation {
         return time;
     }
 
-    public int getOperationType() {
+    public TypeOfOperation getOperationType() {
         return operationType;
     }
 }

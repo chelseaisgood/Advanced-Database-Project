@@ -32,5 +32,5 @@ public class VariableHistory {
     public void setTime(int time) {
         this.time = time;
     }
-    
+
 }

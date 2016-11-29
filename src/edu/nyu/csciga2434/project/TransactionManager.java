@@ -151,6 +151,23 @@ public class TransactionManager {
                     for (Variable var : variablesInThisSite) {
                         if (var.getID() == variableID && var.isAvailableForReading()) {
                             //parse the VariableHistory of this Variable and choose the correct value to return
+                            List<VariableHistory> variableHistory = var.getVariableHistoryList();
+                            int currentMax = Integer.MIN_VALUE;//time counter
+                            int maxIndex = -1;//index in the List which has max
+                            for (int j = 0; j < variableHistory.size(); j++) {
+                                VariableHistory vHistoryTemp = variableHistory.get(j);
+                                if (vHistoryTemp.getTime() > currentMax && vHistoryTemp.getTime() < transaction.getStartTime()) {
+                                    maxIndex = j;
+                                    currentMax = vHistoryTemp.getTime();
+                                }
+                            }
+                            if (maxIndex != -1) {
+                                alreadyRead = true;
+                                System.out.println("The value read is " + variableHistory.get(maxIndex).getValue());
+                                Operation op = new Operation(0, variableID, 0, TypeOfOperation.OP_READ);
+                                // TODO
+                                // transaction.insertOperation(op);
+                            }
 
                         }
                     }

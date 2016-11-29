@@ -23,4 +23,8 @@ public class Transaction {
 	public TypeOfTransaction getTransactionType() {
 		return (isReadOnly ? TypeOfTransaction.Read_Only : TypeOfTransaction.Read_Write);
 	}
+
+	public int getStartTime() {
+		return startTime;
+	}
 }

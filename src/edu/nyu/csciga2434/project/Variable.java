@@ -1,5 +1,8 @@
 package edu.nyu.csciga2434.project;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * User: Minda Fang
  * Date: 10/30/16
@@ -13,6 +16,7 @@ public class Variable {
     private final int id;
     private int value;
     private boolean availableForReading;
+    private List<VariableHistory> variableHistoryList;
 
     public boolean isAvailableForReading() {
         return availableForReading;
@@ -22,10 +26,17 @@ public class Variable {
         this.availableForReading = availableForReading;
     }
 
+    public List<VariableHistory> getVariableHistoryList() {
+        return this.variableHistoryList;
+    }
+
     public Variable(int id){
         this.id = id;
         this.value = id * 10;
         this.availableForReading = true;
+        this.variableHistoryList = new ArrayList<>();
+        variableHistoryList.add(new VariableHistory(this.value, 0));
+
     }
 
     public int getID(){
