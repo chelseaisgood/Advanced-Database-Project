@@ -1,0 +1,5 @@
+For testing, please go under the directory "/src"
+
+javac edu/nyu/csciga2434/project/Test.java
+
+java edu.nyu.csciga2434.project.Test Input.txt
