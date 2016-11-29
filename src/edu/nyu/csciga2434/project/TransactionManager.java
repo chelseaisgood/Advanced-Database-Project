@@ -1,9 +1,8 @@
 package edu.nyu.csciga2434.project;
 
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -141,13 +140,21 @@ public class TransactionManager {
     }
 
 
-    private void read(int transactionID, int variable, TypeOfTransaction typeOfTransaction) {
+    private void read(int transactionID, int variableID, TypeOfTransaction typeOfTransaction) {
         Transaction transaction = currentTransactions.get(transactionID);
         if (typeOfTransaction == TypeOfTransaction.Read_Only) {
             boolean alreadyRead = false;
             for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER && !alreadyRead; i++) {
                 Site tempSite = sites.get(i);
                 if (tempSite.getIfSiteWorking()) {
+                    List<Variable> variablesInThisSite = tempSite.getALLVariables();
+                    for (Variable var : variablesInThisSite) {
+                        if (var.getID() == variableID && var.isAvailableForReading()) {
+                            //parse the VariableHistory of this Variable and choose the correct value to return
+
+                        }
+                    }
+
                     //TODO
                 }
             }

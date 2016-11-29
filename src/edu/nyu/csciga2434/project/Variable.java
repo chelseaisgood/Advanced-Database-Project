@@ -12,10 +12,20 @@ public class Variable {
 
     private final int id;
     private int value;
+    private boolean availableForReading;
+
+    public boolean isAvailableForReading() {
+        return availableForReading;
+    }
+
+    public void setAvailableForReading(boolean availableForReading) {
+        this.availableForReading = availableForReading;
+    }
 
     public Variable(int id){
         this.id = id;
         this.value = id * 10;
+        this.availableForReading = true;
     }
 
     public int getID(){

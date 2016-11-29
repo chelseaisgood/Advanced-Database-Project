@@ -25,6 +25,10 @@ public class Site {
         return ifSiteWorking;
     }
 
+    public List<Variable> getALLVariables() {
+        return this.variableList;
+    }
+
     public Site(int id){
         this.id = id;
         this.variableList = new ArrayList<>();
@@ -83,5 +87,6 @@ public class Site {
         }
         return null;
     }
+
 
 }
