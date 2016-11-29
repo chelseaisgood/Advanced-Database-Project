@@ -26,6 +26,7 @@ public class TransactionManager {
     private Map<Integer, Site> sites;
     private Map<Integer, Transaction> currentTransactions;
     private int time;
+    public Map<Integer, ArrayList<Operation>> waitList;
 
     public TransactionManager() {
         this.sites = new HashMap<>();
@@ -35,6 +36,7 @@ public class TransactionManager {
         }
 
         currentTransactions = new HashMap<>();
+        Map<Integer, ArrayList<Operation>> waitList = new HashMap<>();
     }
 
     public void readCommand(String commandLine) {
