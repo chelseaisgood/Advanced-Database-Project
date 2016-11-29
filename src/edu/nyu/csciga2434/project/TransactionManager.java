@@ -43,7 +43,7 @@ public class TransactionManager {
         //TODO
         this.time++;
         String[] operations = commandLine.split(";");
-        ArrayList<String> endTransactionList = new ArrayList<>();
+        ArrayList<Integer> endTransactionList = new ArrayList<>();
         for (String op : operations) {
             System.out.println(op);
             if (op.startsWith("begin(")) {
@@ -65,7 +65,7 @@ public class TransactionManager {
                 int index = Integer.parseInt(op.substring(5, op.length() - 1));
                 dump(index);
             } else if (op.startsWith("end(")) {
-                endTransactionList.add(op.substring(4, op.length() - 1));
+                endTransactionList.add(Integer.parseInt(op.substring(4, op.length() - 1)));
             } else if (op.startsWith("fail(")) {
                 failSite(Integer.parseInt(op.substring(5, op.length() - 1)));
             } else if (op.startsWith("recover(")) {
@@ -74,6 +74,19 @@ public class TransactionManager {
         }
         for (int i = 0; i < endTransactionList.size(); i++) {
             endTransaction(endTransactionList.get(i));
+        }
+    }
+
+    private void endTransaction(Integer transactionID) {
+        if (this.currentTransactions.containsKey(transactionID)) {
+            Transaction transactionToBeEnded = this.currentTransactions.get(transactionID);
+            if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
+                System.out.println("Read-only transaction T" + transactionID + " has been ended.");
+            } else if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
+                //TODO
+            }
+        } else {
+            System.out.println("No such transaction T" + transactionID + " to end!");
         }
     }
 
