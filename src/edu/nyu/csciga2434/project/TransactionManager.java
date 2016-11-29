@@ -1,6 +1,9 @@
 package edu.nyu.csciga2434.project;
 
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * User: Minda Fang
@@ -25,13 +28,79 @@ public class TransactionManager {
     private int time;
 
     public TransactionManager() {
-        sites = new HashMap<>();
-        time = 0;
+        this.sites = new HashMap<>();
+        this.time = 0;
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             sites.put(i, new Site(i));
         }
 
         currentTransactions = new HashMap<>();
+    }
+
+    public void readCommand(String commandLine) {
+        //TODO
+        this.time++;
+        String[] operations = commandLine.split(";");
+        ArrayList<String> endTransactionList = new ArrayList<>();
+        for (String op : operations) {
+            System.out.println(op);
+            if (op.startsWith("begin(")) {
+                begin(Integer.parseInt(op.substring(6, op.length() - 1)), TypeOfTransaction.Read_Write);
+            } else if (op.startsWith("beginRO(")) {
+                begin(Integer.parseInt(op.substring(8, op.length() - 1)), TypeOfTransaction.Read_Only);
+            } else if (op.startsWith("R(")) {
+                String[] t = op.substring(2, op.length() - 1).split(",");
+                readVariableValue(Integer.parseInt(t[0].substring(1)), Integer.parseInt(t[1].substring(t[1].indexOf("x") + 1)));
+            } else if (op.startsWith("W(")) {
+                String[] t = op.substring(2, op.length() - 1).split(",");
+                writeVariableValue(Integer.parseInt(t[0].substring(1)), Integer.parseInt(t[1].substring(t[1].indexOf("x") + 1)), Integer.parseInt(t[2]));
+            } else if (op.startsWith("dump()")) {
+                dump();
+            } else if (op.startsWith("dump(x")) {
+                int index = Integer.parseInt(op.substring(6, op.length() - 1));
+                dumpVariable(index);
+            } else if (op.startsWith("dump(")) {
+                int index = Integer.parseInt(op.substring(5, op.length() - 1));
+                dump(index);
+            } else if (op.startsWith("end(")) {
+                endTransactionList.add(op.substring(4, op.length() - 1));
+            } else if (op.startsWith("fail(")) {
+                failSite(Integer.parseInt(op.substring(5, op.length() - 1)));
+            } else if (op.startsWith("recover(")) {
+                recoverSite(Integer.parseInt(op.substring(8, op.length() - 1)));
+            }
+        }
+        for (int i = 0; i < endTransactionList.size(); i++) {
+            endTransaction(endTransactionList.get(i));
+        }
+    }
+
+
+    private void failSite(int siteID) {
+        if (this.sites.containsKey(siteID)) {
+            Site s = sites.get(siteID);
+            s.fail();
+        } else {
+            System.out.println("SUCH SITE DOES NOT EXIST (INVALID OPERATION fail(" + Integer.toString(siteID) + ")");
+        }
+    }
+
+    private void recoverSite(int siteID) {
+    }
+
+    private void readVariableValue(int transactionID, int variable) {
+        if (currentTransactions.containsKey(transactionID)) {
+            Transaction t = currentTransactions.get(transactionID);
+            if (t.getTransactionType() == TypeOfTransaction.Read_Only) {
+                read(transactionID, variable, TypeOfTransaction.Read_Only);
+            } else {
+                read(transactionID, variable, TypeOfTransaction.Read_Write);
+            }
+        }
+    }
+
+    private void writeVariableValue(int transactionID, int variable, int value) {
+        //TODO
     }
 
     private void begin(int transactionID, TypeOfTransaction typeOfTransaction) {
@@ -47,7 +116,7 @@ public class TransactionManager {
         }
     }
 
-    private void read(int transactionID, int variable) {
+    private void read(int transactionID, int variable, TypeOfTransaction typeOfTransaction) {
         if (currentTransactions.containsKey(transactionID)) {
             Transaction currTransaction = currentTransactions.get(transactionID);
             if (currTransaction.getTransactionType() == TypeOfTransaction.Read_Only) {
@@ -84,21 +153,9 @@ public class TransactionManager {
         }
     }
 
-    private void endTransaction() {
 
-    }
 
-    private void failSite() {
 
-    }
-
-    private void recoverSite() {
-
-    }
-
-    public void readCommand(String commandLine) {
-
-    }
 
 
 }

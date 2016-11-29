@@ -18,13 +18,13 @@ public class Site {
 
     private final int id;
     private List<Variable> variableList;
-    private LockTable lockTable;
+    private LockTable lockTableOfSite;
     private boolean ifSiteWorking;
 
     public Site(int id){
         this.id = id;
         this.variableList = new ArrayList<>();
-        this.lockTable = new LockTable();
+        this.lockTableOfSite = new LockTable();
         BuildSite();
         this.ifSiteWorking = true;
     }
@@ -54,4 +54,30 @@ public class Site {
     public List<Variable> getVariableList() {
         return this.variableList;
     }
+
+    public void fail() {
+        System.out.println("Setting ifSiteWorking state of this site " + this.id + " to be false");
+        this.ifSiteWorking = false;
+        System.out.println("Now we have to set the currVal of all variable to val");
+        for (int i = 0; i < this.lockTableOfSite.lockTable.size(); i++) {
+            getVariableAndID(this.lockTableOfSite.lockTable.get(i).getVariableID()).setCurrValue(
+                    getVariableAndID(this.lockTableOfSite.lockTable.get(i).getVariableID()).getValue());
+        }
+        System.out.println("Deleting all entries from lock table of site " + this.id);
+        System.out.println("Size of locktable is " + this.lockTableOfSite.lockTable.size());
+        this.lockTableOfSite.lockTable.clear();
+        System.out.println("Size of locktable becomes " + this.lockTableOfSite.lockTable.size());
+    }
+
+    public Variable getVariableAndID(int variableID) {
+        ArrayList<Variable> list;
+        list = (ArrayList<Variable>) this.variableList;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getID() == variableID) {
+                return list.get(i);
+            }
+        }
+        return null;
+    }
+
 }

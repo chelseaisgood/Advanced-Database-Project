@@ -31,4 +31,9 @@ public class LockOnVariable {
         return this.lockType;
     }
 
+    @Override
+    public String toString() {
+        return this.variableID + " " + this.transactionID + " " + this.lockType;
+    }
+
 }
