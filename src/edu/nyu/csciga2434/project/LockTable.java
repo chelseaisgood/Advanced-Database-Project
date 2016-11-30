@@ -19,6 +19,7 @@ public class LockTable {
 
 
     public boolean ifTransactionHasLockOnVariableInThisTable(int variableID, int transactionID, TypeOfLock type) {
+        //TODO
         if (type == TypeOfLock.Read) {
             for (LockOnVariable lockTemp : lockTable) {
                 if (lockTemp.getVariableID() == variableID
