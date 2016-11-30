@@ -182,7 +182,7 @@ public class TransactionManager {
                 for (int q = 1; q <= DEFAULT_SITE_TOTAL_NUMBER; q++) {
                     if (!this.sites.get(q).getIfSiteWorking()) {
                         if (this.sites.get(q).getLockTableOfSite().
-                                ifTransactionHasReadLockOnVariableInThisTable(variableID, transactionID, TypeOfLock.Read)) {
+                                ifTransactionHasLockOnVariableInThisTable(variableID, transactionID, TypeOfLock.Read)) {
                             index = q;
                         }
                     }
@@ -198,6 +198,18 @@ public class TransactionManager {
                 boolean alreadyRead = false;
                 for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER && !alreadyRead; i++) {
                     Site tempSite = sites.get(i);
+                    if (tempSite.getIfSiteWorking()) {
+                        List<Variable> variablesInThisSite = tempSite.getALLVariables();
+                        for (Variable var : variablesInThisSite) {
+                            if (var.getID() == variableID && var.isAvailableForReading()) {
+                                if (tempSite.getLockTableOfSite().ifCanHaveReadLockOnVariable(variableID, transactionID)) {
+
+                                } else {
+
+                                }
+                            }
+                        }
+                    }
                     //TODO
                 }
 

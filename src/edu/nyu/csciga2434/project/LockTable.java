@@ -18,7 +18,7 @@ public class LockTable {
     }
 
 
-    public boolean ifTransactionHasReadLockOnVariableInThisTable(int variableID, int transactionID, TypeOfLock type) {
+    public boolean ifTransactionHasLockOnVariableInThisTable(int variableID, int transactionID, TypeOfLock type) {
         if (type == TypeOfLock.Read) {
             for (LockOnVariable lockTemp : lockTable) {
                 if (lockTemp.getVariableID() == variableID
@@ -37,5 +37,36 @@ public class LockTable {
             }
         }
         return false;
+    }
+
+    public boolean ifCanHaveReadLockOnVariable(int variableID, int transactionID) {
+        List<LockOnVariable> locks = getAllLocksOnVariable(variableID);
+        if (locks.size() == 0) {
+            return true;
+        }
+        boolean hasWriteLock = false;
+        for (LockOnVariable lockTemp : locks) {
+            if (lockTemp.getLockType() == TypeOfLock.Write && lockTemp.getTransactionID() != transactionID) {
+                //Other transaction has a write lock on that variable,
+                // which means that this transaction could not require read lock on that variable.
+                hasWriteLock = true;
+            }
+        }
+
+        if (hasWriteLock) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private List<LockOnVariable> getAllLocksOnVariable(int variableID) {
+        List<LockOnVariable> result = new ArrayList<>();
+        for (LockOnVariable lock : lockTable) {
+            if (lock.getVariableID() == variableID) {
+                result.add(lock);
+            }
+        }
+        return result;
     }
 }
