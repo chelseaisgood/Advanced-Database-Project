@@ -70,4 +70,9 @@ public class LockTable {
         }
         return result;
     }
+
+    public void addLock(int variableID, int transactionID, TypeOfLock lockType) {
+        LockOnVariable tempLock = new LockOnVariable(variableID, transactionID, lockType);
+        this.lockTable.add(tempLock);
+    }
 }

@@ -211,14 +211,26 @@ public class TransactionManager {
                                         //if this transaction has already has a write lock on this variable at this site
                                         alreadyRead = true;
                                         Variable currentVariable = tempSite.getVariableAndID(variableID);
-                                        Operation op = new Operation(currentVariable.getValue(), variableID, time, TypeOfOperation.OP_READ);
+                                        Operation op = new Operation(currentVariable.getCurrValue(), variableID, time, TypeOfOperation.OP_READ);
                                         transaction.addToOperationHistory(op);
                                         transaction.getSitesAccessed().add(i);
                                         System.out.println("[Success] The value of variable x" + variableID + " that is read is "
                                                 + currentVariable.getCurrValue() + ".");
                                         //value read is the current value because transaction already has read/write lock on the variable
+                                    } else {
+                                        //This transaction has no lock on this variable and this variable is ready to be read
+                                        alreadyRead = true;
+                                        tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Read);
+                                        Variable currentVariable = tempSite.getVariableAndID(variableID);
+                                        Operation op = new Operation(currentVariable.getCurrValue(), variableID, time, TypeOfOperation.OP_READ);
+                                        transaction.addToOperationHistory(op);
+                                        transaction.getSitesAccessed().add(i);
+                                        transaction.addLockTolocksList(variableID, TypeOfLock.Read);
+                                        System.out.println("[Success] The value of variable x" + variableID + " that is read is "
+                                                + currentVariable.getCurrValue() + ".");
                                     }
                                 } else {
+                                    //This transaction cannot have a read lock on this variable
                                     //TODO
                                 }
                             }

@@ -50,4 +50,9 @@ public class Transaction {
     public Set<Integer> getSitesAccessed() {
         return sitesAccessed;
     }
+
+    public void addLockTolocksList(int variableID, TypeOfLock type) {
+        LockOnVariable tempLock = new LockOnVariable(variableID, this.transactionID, type);
+        this.locksList.add(tempLock);
+    }
 }
