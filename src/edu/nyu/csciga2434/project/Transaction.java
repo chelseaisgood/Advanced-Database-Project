@@ -1,7 +1,9 @@
 package edu.nyu.csciga2434.project;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * User: Minda Fang
@@ -17,6 +19,7 @@ public class Transaction {
 	private final int startTime;
     private List<Operation> operationHistory;
     private List<LockOnVariable> locksList;
+    private Set<Integer> sitesAccessed;
 
 
 	public Transaction(int transactionID, TypeOfTransaction type, int startTime){
@@ -25,6 +28,7 @@ public class Transaction {
 		this.startTime = startTime;
         this.operationHistory = new ArrayList<>();
         this.locksList = new ArrayList<>();
+        this.sitesAccessed = new HashSet<>();
     }
 
 	public TypeOfTransaction getTransactionType() {
@@ -41,5 +45,9 @@ public class Transaction {
 
     public List<LockOnVariable> getLocksList() {
         return locksList;
+    }
+
+    public Set<Integer> getSitesAccessed() {
+        return sitesAccessed;
     }
 }

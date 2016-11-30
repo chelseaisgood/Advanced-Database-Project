@@ -17,6 +17,7 @@ public class Variable {
     private int value;
     private boolean availableForReading;
     private List<VariableHistory> variableHistoryList;
+    private int currValue;
 
     public boolean isAvailableForReading() {
         return availableForReading;
@@ -36,7 +37,7 @@ public class Variable {
         this.availableForReading = true;
         this.variableHistoryList = new ArrayList<>();
         variableHistoryList.add(new VariableHistory(this.value, 0));
-
+        setCurrValue(this.value);
     }
 
     public int getID(){
@@ -52,6 +53,10 @@ public class Variable {
     }
 
     public void setCurrValue(int value) {
-        //TODO
+        this.currValue = value;
+    }
+
+    public int getCurrValue() {
+        return currValue;
     }
 }

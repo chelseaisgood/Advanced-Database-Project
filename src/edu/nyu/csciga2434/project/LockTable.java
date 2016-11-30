@@ -24,7 +24,7 @@ public class LockTable {
             for (LockOnVariable lockTemp : lockTable) {
                 if (lockTemp.getVariableID() == variableID
                         && lockTemp.getTransactionID() == transactionID
-                        && (lockTemp.getLockType() == TypeOfLock.Read || lockTemp.getLockType() == TypeOfLock.Write)) {
+                        && lockTemp.getLockType() == TypeOfLock.Read ) {
                     return true;
                 }
             }

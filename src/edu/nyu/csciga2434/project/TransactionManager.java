@@ -184,6 +184,7 @@ public class TransactionManager {
                         if (this.sites.get(q).getLockTableOfSite().
                                 ifTransactionHasLockOnVariableInThisTable(variableID, transactionID, TypeOfLock.Read)) {
                             index = q;
+                            break;
                         }
                     }
                 }
@@ -191,6 +192,7 @@ public class TransactionManager {
                 for (Variable temp : varsInSite) {
                     if (temp.getID() == variableID) {
                         System.out.println("[Success] The value of variable x" + variableID + " that is read is " + temp.getValue() + ".");
+                        break;
                     }
                 }
             } else {
@@ -202,8 +204,20 @@ public class TransactionManager {
                         List<Variable> variablesInThisSite = tempSite.getALLVariables();
                         for (Variable var : variablesInThisSite) {
                             if (var.getID() == variableID && var.isAvailableForReading()) {
+                                //variable we are looking for found in this site and it is available for reading(in term of recovery)
                                 if (tempSite.getLockTableOfSite().ifCanHaveReadLockOnVariable(variableID, transactionID)) {
                                     //TODO
+                                    if (tempSite.getLockTableOfSite().ifTransactionHasLockOnVariableInThisTable(variableID, transactionID, TypeOfLock.Write)) {
+                                        //if this transaction has already has a write lock on this variable at this site
+                                        alreadyRead = true;
+                                        Variable currentVariable = tempSite.getVariableAndID(variableID);
+                                        Operation op = new Operation(currentVariable.getValue(), variableID, time, TypeOfOperation.OP_READ);
+                                        transaction.addToOperationHistory(op);
+                                        transaction.getSitesAccessed().add(i);
+                                        System.out.println("[Success] The value of variable x" + variableID + " that is read is "
+                                                + currentVariable.getCurrValue() + ".");
+                                        //value read is the current value because transaction already has read/write lock on the variable
+                                    }
                                 } else {
                                     //TODO
                                 }
@@ -227,7 +241,7 @@ public class TransactionManager {
         List<LockOnVariable> transactionLockList = t.getLocksList();
         for (int i = 0; i < transactionLockList.size(); i++) {
             if (transactionLockList.get(i).getVariableID() == variableID
-                    && (transactionLockList.get(i).getLockType() == TypeOfLock.Read || transactionLockList.get(i).getLockType() == TypeOfLock.Write)) {
+                    && transactionLockList.get(i).getLockType() == TypeOfLock.Read) {
                 return true;
             }
         }
