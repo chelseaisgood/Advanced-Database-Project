@@ -203,9 +203,9 @@ public class TransactionManager {
                         for (Variable var : variablesInThisSite) {
                             if (var.getID() == variableID && var.isAvailableForReading()) {
                                 if (tempSite.getLockTableOfSite().ifCanHaveReadLockOnVariable(variableID, transactionID)) {
-
+                                    //TODO
                                 } else {
-
+                                    //TODO
                                 }
                             }
                         }
