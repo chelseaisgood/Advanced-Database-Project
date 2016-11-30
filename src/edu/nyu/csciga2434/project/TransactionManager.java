@@ -231,12 +231,14 @@ public class TransactionManager {
                                     }
                                 } else {
                                     //This transaction cannot have a read lock on this variable
-                                    //TODO
+                                    //This operation has to wait
+                                    alreadyRead = true;
+                                    insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
+                                    System.out.println("[Failure] R(T" + transactionID + ", x" + variableID + ") has to wait because it cannot acquire the read lock on that variable.");
                                 }
                             }
                         }
                     }
-                    //TODO
                 }
 
                 if (!alreadyRead) {
@@ -248,6 +250,8 @@ public class TransactionManager {
             }
         }
     }
+
+
 
     private boolean ifTransactionHoldReadLockOnVariable(Transaction t, int variableID) {
         List<LockOnVariable> transactionLockList = t.getLocksList();
@@ -266,15 +270,32 @@ public class TransactionManager {
             ops = waitList.get(transactionID);
             ops.add(op);
         } else {
-            ops = new ArrayList<Operation>();
+            ops = new ArrayList<>();
             ops.add(op);
             waitList.put(transactionID, ops);
         }
     }
 
 
-    private void writeVariableValue(int transactionID, int variable, int value) {
+    private void writeVariableValue(int transactionID, int variableID, int value) {
         //TODO
+        if (!currentTransactions.containsKey(transactionID)) {
+            //check if this transaction alive or not
+            System.out.println("[Failure] Please make sure that you first announce the BEGIN of this transaction!");
+            return;
+        }
+
+        Transaction transaction = currentTransactions.get(transactionID);
+        if (transaction.getTransactionType() != TypeOfTransaction.Read_Write) {
+            System.out.println("[Failure] Please make sure that this transaction is actually a READ_WRITE one!");
+            return;
+        }
+
+        if (transaction.ifAlreadyHaveWriteLock(variableID)) {
+
+        }
+
+
     }
 
 

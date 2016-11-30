@@ -55,4 +55,13 @@ public class Transaction {
         LockOnVariable tempLock = new LockOnVariable(variableID, this.transactionID, type);
         this.locksList.add(tempLock);
     }
+
+    public boolean ifAlreadyHaveWriteLock(int variableID) {
+        for (LockOnVariable lock : this.locksList) {
+            if (lock.getLockType() == TypeOfLock.Write && lock.getVariableID() == variableID) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

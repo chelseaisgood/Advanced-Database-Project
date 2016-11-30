@@ -61,7 +61,7 @@ public class LockTable {
         }
     }
 
-    private List<LockOnVariable> getAllLocksOnVariable(int variableID) {
+    public List<LockOnVariable> getAllLocksOnVariable(int variableID) {
         List<LockOnVariable> result = new ArrayList<>();
         for (LockOnVariable lock : lockTable) {
             if (lock.getVariableID() == variableID) {
