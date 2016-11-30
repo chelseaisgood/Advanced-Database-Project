@@ -11,9 +11,31 @@ import java.util.*;
 
 public class LockTable {
 
-    public ArrayList<LockOnVariable> lockTable;
+    public List<LockOnVariable> lockTable;
 
     public LockTable(){
         lockTable = new ArrayList<>();
+    }
+
+
+    public boolean ifTransactionHasReadLockOnVariableInThisTable(int variableID, int transactionID, TypeOfLock type) {
+        if (type == TypeOfLock.Read) {
+            for (LockOnVariable lockTemp : lockTable) {
+                if (lockTemp.getVariableID() == variableID
+                        && lockTemp.getTransactionID() == transactionID
+                        && (lockTemp.getLockType() == TypeOfLock.Read || lockTemp.getLockType() == TypeOfLock.Write)) {
+                    return true;
+                }
+            }
+        } else if (type == TypeOfLock.Write) {
+            for (LockOnVariable lockTemp : lockTable) {
+                if (lockTemp.getVariableID() == variableID
+                        && lockTemp.getTransactionID() == transactionID
+                        && lockTemp.getLockType() == type) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -29,6 +29,10 @@ public class Site {
         return this.variableList;
     }
 
+    public LockTable getLockTableOfSite () {
+        return this.lockTableOfSite;
+    }
+
     public Site(int id){
         this.id = id;
         this.variableList = new ArrayList<>();
@@ -70,6 +74,7 @@ public class Site {
         for (int i = 0; i < this.lockTableOfSite.lockTable.size(); i++) {
             getVariableAndID(this.lockTableOfSite.lockTable.get(i).getVariableID()).setCurrValue(
                     getVariableAndID(this.lockTableOfSite.lockTable.get(i).getVariableID()).getValue());
+            //TODO
         }
         System.out.println("Deleting all entries from lock table of site " + this.id);
         System.out.println("Size of locktable is " + this.lockTableOfSite.lockTable.size());
