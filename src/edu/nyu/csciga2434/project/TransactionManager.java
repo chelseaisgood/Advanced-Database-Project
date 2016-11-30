@@ -167,11 +167,11 @@ public class TransactionManager {
                             }
                         }
                     }
-                    //TODO
                 }
             }
             if (!alreadyRead) {
                 // The value of this variable could not be read from any up site. So this operation has to wait.
+                // TODO
                 insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
                 System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
             }
@@ -194,7 +194,19 @@ public class TransactionManager {
                     }
                 }
             } else {
-                //TODO
+                //the transaction does not have a read lock on this variable
+                boolean alreadyRead = false;
+                for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER && !alreadyRead; i++) {
+                    Site tempSite = sites.get(i);
+                    //TODO
+                }
+
+                if (!alreadyRead) {
+                    // The value of this variable could not be read from any up site. So this operation has to wait.
+                    // TODO
+                    insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
+                    System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
+                }
             }
         }
     }
