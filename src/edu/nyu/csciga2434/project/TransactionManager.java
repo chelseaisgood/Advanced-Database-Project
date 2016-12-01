@@ -1,8 +1,6 @@
 package edu.nyu.csciga2434.project;
 
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
 
 /**
  * User: Minda Fang
@@ -160,24 +158,22 @@ public class TransactionManager {
         }
         System.out.println("[Committed] This transaction T" + transactionID + " has been committed!");
 
-
     }
 
 
     private void failSite(int siteID) {
-        if (this.sites.containsKey(siteID)) {
-            Site site = sites.get(siteID);
-            site.fail();
+        if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == true) {
+            sites.get(siteID).failThisSite();
         } else {
-            System.out.println("SUCH SITE DOES NOT EXIST (INVALID OPERATION fail(" + Integer.toString(siteID) + ")");
+            System.out.println("[Failure] Fail to fail this site. Maybe it is still down or not even exists!");
         }
     }
 
     private void recoverSite(int siteID) {
-        if (sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == false) {
+        if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == false) {
             sites.get(siteID).recoverThisSite();
         } else {
-            System.out.println("[Failure] Fail to recover this site. Maybe it is still working or even not exists!");
+            System.out.println("[Failure] Fail to recover this site. Maybe it is still working or not even exists!");
         }
     }
 
@@ -198,44 +194,43 @@ public class TransactionManager {
     private void read(int transactionID, int variableID, TypeOfTransaction typeOfTransaction) {
         Transaction transaction = currentTransactions.get(transactionID);
         if (typeOfTransaction == TypeOfTransaction.Read_Only) {
-            boolean alreadyRead = false;
-            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER && !alreadyRead; i++) {
+            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
                 Site tempSite = sites.get(i);
-                if (tempSite.getIfSiteWorking()) {
-                    List<Variable> variablesInThisSite = tempSite.getALLVariables();
-                    for (Variable var : variablesInThisSite) {
-                        if (var.getID() == variableID && var.isAvailableForReading()) {
-                            //parse the VariableHistory of this Variable and select the correct value to read
-                            List<VariableHistory> variableHistory = var.getVariableHistoryList();
-                            int currentMax = Integer.MIN_VALUE; //time counter
-                            int maxIndex = -1;  //index in the List which has max
-                            for (int j = 0; j < variableHistory.size(); j++) {
-                                VariableHistory vHistoryTemp = variableHistory.get(j);
-                                // For read only
-                                if (vHistoryTemp.getTime() > currentMax && vHistoryTemp.getTime() < transaction.getStartTime()) {
-                                    maxIndex = j;
-                                    currentMax = vHistoryTemp.getTime();
-                                }
+                if (!tempSite.getIfSiteWorking()) {
+                    continue;
+                }
+                List<Variable> variablesInThisSite = tempSite.getALLVariables();
+                for (Variable var : variablesInThisSite) {
+                    if (var.getID() == variableID && var.isAvailableForReading()) {
+                        //parse the VariableHistory of this Variable and select the correct value to read
+                        List<VariableHistory> variableHistory = var.getVariableHistoryList();
+                        int maxTime = Integer.MIN_VALUE; //time counter
+                        int maxIndex = -1;  //index in the List which has max time
+                        for (int j = 0; j < variableHistory.size(); j++) {
+                            VariableHistory vHistoryTemp = variableHistory.get(j);
+                            if (vHistoryTemp.getTime() > maxTime && vHistoryTemp.getTime() < transaction.getStartTime()) {
+                                maxIndex = j;
+                                maxTime = vHistoryTemp.getTime();
                             }
-                            if (maxIndex != -1) {
-                                alreadyRead = true;
-                                int readValue = variableHistory.get(maxIndex).getValue();
-                                System.out.println("[Success] The value read of variable x" + variableID + " is " + readValue + ".");
-                                Operation op = new Operation(readValue, variableID, time, TypeOfOperation.OP_READ);
-                                // TODO
-                                transaction.addToOperationHistory(op);
-                                // put successful operation into operationHistory record stored inside every transaction
-                            }
+                        }
+                        if (maxIndex != -1) {
+                            int readValue = variableHistory.get(maxIndex).getValue();
+                            System.out.println("[Success] The snapshot value of variable x" + variableID + " is " + readValue + ".");
+                            Operation op = new Operation(readValue, variableID, time, TypeOfOperation.OP_READ);
+                            // TODO
+                            transaction.addToOperationHistory(op);
+                            return;
+                            // put successful operation into operationHistory record stored inside every transaction
                         }
                     }
                 }
             }
-            if (!alreadyRead) {
-                // The value of this variable could not be read from any up site. So this operation has to wait.
-                // TODO
-                insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
-                System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
-            }
+
+            // The value of this variable could not be read from any up site. So this operation has to wait.
+            // TODO
+            insertToWaitList(transactionID, new Operation(0, variableID, time, TypeOfOperation.OP_READ));
+            System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
+
         } else {
             // read-write
             if (!currentTransactions.containsKey(transactionID)) {
@@ -258,7 +253,7 @@ public class TransactionManager {
             }
             if (!canFindThisVariable) {
                 //cannot find any up sites that contains this variable
-                insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
+                insertToWaitList(transactionID, new Operation(0, variableID, time, TypeOfOperation.OP_READ));
                 System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
                 return;
             }
@@ -305,7 +300,7 @@ public class TransactionManager {
 
             //TODO
             //There is some conflicting lock
-            insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
+            insertToWaitList(transactionID, new Operation(0, variableID, time, TypeOfOperation.OP_READ));
             System.out.println("[Failure] R(T" + transactionID + ", x" + variableID + ") has to wait because it cannot acquire the read lock on that variable.");
 
         }
@@ -357,7 +352,7 @@ public class TransactionManager {
         return Integer.MIN_VALUE;
     }
 
-
+    /*
     private boolean ifTransactionHoldReadLockOnVariable(Transaction t, int variableID) {
         List<LockOnVariable> transactionLockList = t.getLocksList();
         for (int i = 0; i < transactionLockList.size(); i++) {
@@ -369,8 +364,9 @@ public class TransactionManager {
         }
         return false;
     }
+    */
 
-    private void insertToWaitList(Operation op, int transactionID) {
+    private void insertToWaitList(int transactionID, Operation op) {
         ArrayList<Operation> ops;
         if (waitList != null && waitList.containsKey(transactionID)) {
             ops = waitList.get(transactionID);
@@ -440,7 +436,8 @@ public class TransactionManager {
             }
             else {
                 // put this transaction to the waiting list
-                System.out.println("//TODO putting this transcation into the waiting list!");
+                insertToWaitList(transactionID, new Operation(value, variableID, time, TypeOfOperation.OP_WRITE));
+                System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
                 // TODO
             }
         }

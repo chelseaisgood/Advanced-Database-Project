@@ -158,7 +158,7 @@ public class Site {
         return;
     }
 
-    public void fail() {
+    public void failThisSite() {
         System.out.println("This site " + this.getSiteID() + " is down");
         this.ifSiteWorking = false;
         // erase the lock table
