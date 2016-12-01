@@ -104,6 +104,16 @@ public class Site {
         return false;
     }
 
+    public boolean ifThisVariableIsAvailable(int variableID) {
+        List<Variable> list = this.getVariableList();
+        for (Variable var : list) {
+            if (var.getID() == variableID && var.isAvailableForReading()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void writeToVariableCurrValueInThisSite(int variableID, int value) {
         List<Variable> list = this.getALLVariables();
         for (Variable var : list) {
@@ -123,4 +133,16 @@ public class Site {
         }
         return false;
     }
+
+    public int returnThisVariableValue(int variableID) {
+        int result = 0;
+        for(Variable var : this.variableList) {
+            if (var.getID() == variableID) {
+                return var.getValue();
+            }
+        }
+        return result;
+    }
+
+
 }

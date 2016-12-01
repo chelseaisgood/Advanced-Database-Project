@@ -178,6 +178,77 @@ public class TransactionManager {
             }
         } else {
             // read-write
+            if (!currentTransactions.containsKey(transactionID)) {
+                //check if this transaction alive or not
+                System.out.println("[Failure] Please make sure that you first announce the BEGIN of this transaction!");
+                return;
+            }
+
+            // if there is any up site available for reading this variable
+            boolean canFindThisVariable = false;
+            for (int i = 1; i < DEFAULT_SITE_TOTAL_NUMBER; i++) {
+                Site tempSite = this.sites.get(i);
+                if (!tempSite.getIfSiteWorking()) {
+                    continue;
+                }
+                if (tempSite.ifContainsVariable(variableID) && tempSite.ifThisVariableIsAvailable(variableID)) {
+                    canFindThisVariable = true;
+                    break;
+                }
+            }
+            if (!canFindThisVariable) {
+                //cannot find any up sites that contains this variable
+                insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
+                System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
+                return;
+            }
+
+            // if this transaction has already has all write locks
+            // if all up site that has this variable all have a write lock hold by this transaction
+            boolean ifAllHaveAWriteLock = true;
+            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+                Site tempSite = this.sites.get(i);
+                if (!tempSite.getIfSiteWorking()) {
+                    continue;
+                }
+                if (!tempSite.ifHaveThisVariable(variableID)) {
+                    continue;
+                }
+                LockTable tempLockTable = tempSite.getLockTableOfSite();
+                if (!tempLockTable.ifTransactionHasLockOnVariableInThisTable(variableID, transactionID, TypeOfLock.Write)) {
+                    ifAllHaveAWriteLock = false;
+                    break;
+                }
+            }
+
+            if (ifAllHaveAWriteLock) {
+                //This transaction has all the write locks that it needs, which means it can write now.
+                int value = getVariableValueFromAnyUpSite(variableID);
+                System.out.println("[Success] The value of variable x" + variableID + " that is read is " + value + ".");
+                // do not need to give read lock since write lock is already there
+                Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_READ);
+                transaction.addToOperationHistory(op);
+                return;
+            }
+
+            //judge if can have all read locks
+            boolean ifExistsAnyConlictingWriteLockOnAllUpSites = findifExistsAnyConlictingWriteLockOnAllUpSites(transactionID, variableID);
+            if (!ifExistsAnyConlictingWriteLockOnAllUpSites) {
+                //there is no conflicting locks, so just read value and get all variable has read lock
+                getAllReadLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
+                int value = getVariableValueFromAnyUpSite(variableID);
+                System.out.println("[Success] The value of variable x" + variableID + " that is read is " + value + ".");
+                Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_READ);
+                transaction.addToOperationHistory(op);
+                return;
+            }
+
+            //TODO
+            //There is some conflicting lock
+            insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
+            System.out.println("[Failure] R(T" + transactionID + ", x" + variableID + ") has to wait because it cannot acquire the read lock on that variable.");
+            /*
+            //oldddddddddddddddddddddddddddddddddddddddddddd
             if (ifTransactionHoldReadLockOnVariable(transaction, variableID)) {
                 int index = -1;
                 for (int q = 1; q <= DEFAULT_SITE_TOTAL_NUMBER; q++) {
@@ -189,6 +260,7 @@ public class TransactionManager {
                         }
                     }
                 }
+                System.out.println("index:" + index);
                 List<Variable> varsInSite = this.sites.get(index).getALLVariables();
                 for (Variable temp : varsInSite) {
                     if (temp.getID() == variableID) {
@@ -197,6 +269,7 @@ public class TransactionManager {
                     }
                 }
             } else {
+                System.out.println("No read lock found!");
                 //the transaction does not have a read lock on this variable
                 boolean alreadyRead = false;
                 for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER && !alreadyRead; i++) {
@@ -249,9 +322,55 @@ public class TransactionManager {
                     System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
                 }
             }
+            */
         }
     }
 
+    private void getAllReadLockedOnAllUpSitesByThisTransaction(int transactionID, int variableID) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID) && tempSite.ifThisVariableIsAvailable(variableID)) {
+                List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
+                if (lockListOnThisVariable.size() == 0) {
+                    tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Read);
+                    System.out.println("read lock added!!!!!!!!");
+                }// else means this transaction already has one lock on this variable
+            }
+        }
+    }
+
+    private boolean findifExistsAnyConlictingWriteLockOnAllUpSites(int transactionID, int variableID) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            System.out.println("Looking at site" + i + ":");
+            Site tempSite = this.sites.get(i);
+            if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
+                System.out.println("Entering site" + i + ":");
+                List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
+                for (LockOnVariable lock : lockListOnThisVariable) {
+                    if (lock.getVariableID() == variableID && lock.getTransactionID() != transactionID && lock.getLockType() != TypeOfLock.Read) {
+                        System.out.println("Transaction T" + transactionID + " is blocked by Transaction T" + lock.getTransactionID() + " on Variable x" + variableID + ".");
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private int getVariableValueFromAnyUpSite(int variableID) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            if (!tempSite.getIfSiteWorking()) {
+                continue;
+            }
+            if (!tempSite.ifHaveThisVariable(variableID)) {
+                continue;
+            }
+
+            return tempSite.returnThisVariableValue(variableID);
+        }
+        return Integer.MIN_VALUE;
+    }
 
 
     private boolean ifTransactionHoldReadLockOnVariable(Transaction t, int variableID) {
@@ -259,6 +378,7 @@ public class TransactionManager {
         for (int i = 0; i < transactionLockList.size(); i++) {
             if (transactionLockList.get(i).getVariableID() == variableID
                     && transactionLockList.get(i).getLockType() == TypeOfLock.Read) {
+                System.out.println("Transaction T" + transactionLockList.get(i).getTransactionID() +" has read lock on variable x" + transactionLockList.get(i).getVariableID());
                 return true;
             }
         }
@@ -335,7 +455,7 @@ public class TransactionManager {
             }
             else {
                 // put this transaction to the waiting list
-                System.out.println("?????????????????");
+                System.out.println("//TODO putting this transcation into the waiting list!");
                 // TODO
             }
         }
@@ -349,10 +469,10 @@ public class TransactionManager {
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
                 if (lockListOnThisVariable.size() == 0) {
                     tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Write);
-                    //System.out.println("added!!!!!!!!");
+                    System.out.println("added!!!!!!!!");
                 } else {
                     tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
-                    //System.out.println("updated!!!!!!!!");
+                    System.out.println("updated!!!!!!!!");
                 }
             }
         }
@@ -368,8 +488,7 @@ public class TransactionManager {
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
                 for (LockOnVariable lock : lockListOnThisVariable) {
                     if (lock.getVariableID() == variableID && lock.getTransactionID() != transactionID) {
-                        //System.out.println(lock.getVariableID() + " &&&&&&& " + variableID);
-                        //System.out.println(lock.getTransactionID() + " &&&&&&& " + transactionID);
+                        System.out.println("Transaction T" + transactionID + " is blocked by Transaction T" + lock.getTransactionID() + " on Variable x" + variableID + ".");
                         return true;
                     }
                 }
