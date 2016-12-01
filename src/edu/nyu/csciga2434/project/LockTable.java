@@ -86,7 +86,7 @@ public class LockTable {
     }
 
     public void updateReadLockToWriteLock(int variableID, int transactionID) {
-        LockOnVariable lock = this.lockTable.get(variableID);
+        LockOnVariable lock = getAllLocksOnVariable(variableID).get(0);
         lock.setLockType(TypeOfLock.Write);
     }
 }

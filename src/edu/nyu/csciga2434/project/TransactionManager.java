@@ -56,7 +56,7 @@ public class TransactionManager {
                 readVariableValue(Integer.parseInt(t[0].substring(1)), Integer.parseInt(t[1].substring(t[1].indexOf("x") + 1)));
             } else if (op.startsWith("W(")) {
                 String[] t = op.substring(2, op.length() - 1).split(",");
-                writeVariableValue(Integer.parseInt(t[0].substring(1)), Integer.parseInt(t[1].substring(t[1].indexOf("x") + 1)), Integer.parseInt(t[2]));
+                writeVariableValue(Integer.parseInt(t[0].substring(1)), Integer.parseInt(t[1].substring(t[1].indexOf("x") + 1)), Integer.valueOf(t[2].trim()));
             } else if (op.startsWith("dump()")) {
                 dump();
             } else if (op.startsWith("dump(x")) {
@@ -308,17 +308,21 @@ public class TransactionManager {
             }
         }
 
-        if (transaction.ifAlreadyHaveWriteLock(variableID) && ifAllHaveAWriteLock) {
+        //if (transaction.ifAlreadyHaveWriteLock(variableID) && ifAllHaveAWriteLock) {
+        if (ifAllHaveAWriteLock) {
 //            int numberOfWriteLocksOnThisVariableByThisTransaction = transaction
 //                    .getNumberOfLocksOnThisVariableByThisTransaction(TypeOfLock.Write, variableID);
 //            int numberOfUpSitesContainingThisVariable = this.getNumberOfUpSitesContainingThisVariable(variableID);
             //This transaction has all the write locks that it needs, which means it can write now.
+            System.out.println("[Success] Variable x" + variableID
+                    + " on all up sites has their temp uncommitted value to be " + value
+                    + " by transaction T" + transactionID + ".");
             this.writeToAllUpSites(transactionID, variableID, value);
             Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
             transaction.addToOperationHistory(op);
         } else {
-            boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
-            if (ifThisTransactionCanHaveWriteLockOnAllUpSites) {
+            //boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
+            if (findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
                 this.writeToAllUpSites(transactionID, variableID, value);
                 Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
@@ -329,6 +333,7 @@ public class TransactionManager {
             }
             else {
                 // put this transaction to the waiting list
+                System.out.println("?????????????????");
                 // TODO
             }
         }
@@ -340,7 +345,7 @@ public class TransactionManager {
             Site tempSite = this.sites.get(i);
             if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
-                if (lockListOnThisVariable == null) {
+                if (lockListOnThisVariable.size() == 0) {
                     tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Write);
                 } else {
                     tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
@@ -357,12 +362,12 @@ public class TransactionManager {
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
                 for (LockOnVariable lock : lockListOnThisVariable) {
                     if (lock.getTransactionID() != transactionID) {
-                        return false;
+                        return true;
                     }
                 }
             }
         }
-        return true;
+        return false;
     }
 
     private void writeToAllUpSites(int transactionID, int variableID, int value) {
