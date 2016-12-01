@@ -71,20 +71,6 @@ public class Site {
         return this.variableList;
     }
 
-    public void fail() {
-        System.out.println("Setting ifSiteWorking state of this site " + this.id + " to be false");
-        this.ifSiteWorking = false;
-        System.out.println("Now we have to set the currVal of all variable to val");
-        for (int i = 0; i < this.lockTableOfSite.lockTable.size(); i++) {
-            getVariableAndID(this.lockTableOfSite.lockTable.get(i).getVariableID()).setCurrValue(
-                    getVariableAndID(this.lockTableOfSite.lockTable.get(i).getVariableID()).getValue());
-            //TODO
-        }
-        System.out.println("Deleting all entries from lock table of site " + this.id);
-        System.out.println("Size of locktable is " + this.lockTableOfSite.lockTable.size());
-        this.lockTableOfSite.lockTable.clear();
-        System.out.println("Size of locktable becomes " + this.lockTableOfSite.lockTable.size());
-    }
 
     public Variable getVariableAndID(int variableID) {
         ArrayList<Variable> list;
@@ -172,4 +158,30 @@ public class Site {
         return;
     }
 
+    public void fail() {
+        System.out.println("This site " + this.getSiteID() + " is down");
+        this.ifSiteWorking = false;
+        // erase the lock table
+
+        //System.out.println("Deleting all entries from lock table of site " + this.getSiteID());
+        //System.out.println("Size of locktable is " + this.lockTableOfSite.lockTable.size());
+        this.lockTableOfSite.lockTable = new ArrayList<>();
+        //System.out.println("Size of locktable becomes " + this.lockTableOfSite.lockTable.size());
+    }
+
+    public void recoverThisSite() {
+        System.out.println("This site " + this.getSiteID() + " is recovered.");
+        this.ifSiteWorking = true;
+        //Setting only non-replicated variables as available to read
+        //Replicated variables should not be available to read
+        List<Variable> varList = this.getALLVariables();
+
+        for (Variable var : varList) {
+            if (var.hasCopy()) {
+                var.setAvailableForReading(false);
+            } else {
+                var.setAvailableForReading(true);
+            }
+        }
+    }
 }

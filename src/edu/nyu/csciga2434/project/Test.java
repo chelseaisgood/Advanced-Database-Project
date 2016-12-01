@@ -27,7 +27,7 @@ public class Test {
                 manager.readCommand(scanner.nextLine());
             }
             if (manager.waitList != null) {
-                System.out.println(manager.waitList.size());
+                System.out.println("WaitList Size:" + manager.waitList.size());
             }
         } catch (IOException e) {
             e.printStackTrace();

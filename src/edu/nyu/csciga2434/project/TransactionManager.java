@@ -122,7 +122,7 @@ public class TransactionManager {
             return;
         }
 
-        for (int i = 1; i < DEFAULT_SITE_TOTAL_NUMBER; i++) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             Site tempSite = this.sites.get(i);
             List<LockOnVariable> table = tempSite.getLockTableOfSite().lockTable;
             List<Integer> indexList= new ArrayList<>();
@@ -166,14 +166,19 @@ public class TransactionManager {
 
     private void failSite(int siteID) {
         if (this.sites.containsKey(siteID)) {
-            Site s = sites.get(siteID);
-            s.fail();
+            Site site = sites.get(siteID);
+            site.fail();
         } else {
             System.out.println("SUCH SITE DOES NOT EXIST (INVALID OPERATION fail(" + Integer.toString(siteID) + ")");
         }
     }
 
     private void recoverSite(int siteID) {
+        if (sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == false) {
+            sites.get(siteID).recoverThisSite();
+        } else {
+            System.out.println("[Failure] Fail to recover this site. Maybe it is still working or even not exists!");
+        }
     }
 
     private void readVariableValue(int transactionID, int variable) {
@@ -241,7 +246,7 @@ public class TransactionManager {
 
             // if there is any up site available for reading this variable
             boolean canFindThisVariable = false;
-            for (int i = 1; i < DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
                 Site tempSite = this.sites.get(i);
                 if (!tempSite.getIfSiteWorking()) {
                     continue;

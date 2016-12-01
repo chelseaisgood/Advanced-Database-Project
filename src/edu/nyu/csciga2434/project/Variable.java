@@ -69,4 +69,8 @@ public class Variable {
     public int getCurrValue() {
         return currValue;
     }
+
+    public boolean hasCopy() {
+        return hasCopy;
+    }
 }
