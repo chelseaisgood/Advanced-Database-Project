@@ -114,4 +114,13 @@ public class Site {
             }
         }
     }
+
+    public boolean ifHaveThisVariable(int variableID) {
+        for(Variable var : this.variableList) {
+            if (var.getID() == variableID) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -291,23 +291,78 @@ public class TransactionManager {
             return;
         }
 
-        if (transaction.ifAlreadyHaveWriteLock(variableID)) {
-            int numberOfLocksOnThisVariableByThisTransaction = transaction
-                    .getNumberOfLocksOnThisVariableByThisTransaction(TypeOfLock.Write, variableID);
-            int numberOfUpSitesContainingThisVariable = this.getNumberOfUpSitesContainingThisVariable(variableID);
+        // if all up site that has this variable all have a write lock hold by this transaction
+        boolean ifAllHaveAWriteLock = true;
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            if (!tempSite.getIfSiteWorking()) {
+                continue;
+            }
+            if (!tempSite.ifHaveThisVariable(variableID)) {
+                continue;
+            }
+            LockTable tempLockTable = tempSite.getLockTableOfSite();
+            if (!tempLockTable.ifTransactionHasLockOnVariableInThisTable(variableID,transactionID, TypeOfLock.Write)) {
+                ifAllHaveAWriteLock = false;
+                break;
+            }
+        }
 
-            if (numberOfLocksOnThisVariableByThisTransaction == numberOfUpSitesContainingThisVariable) {
-                //This transaction has all the write locks that it needs, which means it can write now.
+        if (transaction.ifAlreadyHaveWriteLock(variableID) && ifAllHaveAWriteLock) {
+//            int numberOfWriteLocksOnThisVariableByThisTransaction = transaction
+//                    .getNumberOfLocksOnThisVariableByThisTransaction(TypeOfLock.Write, variableID);
+//            int numberOfUpSitesContainingThisVariable = this.getNumberOfUpSitesContainingThisVariable(variableID);
+            //This transaction has all the write locks that it needs, which means it can write now.
+            this.writeToAllUpSites(transactionID, variableID, value);
+            Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
+            transaction.addToOperationHistory(op);
+        } else {
+            boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
+            if (ifThisTransactionCanHaveWriteLockOnAllUpSites) {
+                getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
                 this.writeToAllUpSites(transactionID, variableID, value);
                 Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
                 transaction.addToOperationHistory(op);
-            } else {
-
+                System.out.println("[Success] Variable x" + variableID
+                        + " on all up sites has their temp uncommitted value to be " + value
+                        + " by transaction T" + transactionID + ".");
             }
-        } else {
-
+            else {
+                // put this transaction to the waiting list
+                // TODO
+            }
         }
 
+    }
+
+    private void getAllWriteLockedOnAllUpSitesByThisTransaction(int transactionID, int variableID) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
+                List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
+                if (lockListOnThisVariable == null) {
+                    tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Write);
+                } else {
+                    tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
+                }
+            }
+        }
+    }
+
+    private boolean findIfExistsConflictLockOnAllUpSites(int transactionID, int variableID) {
+        //find if exists any read or write lock hold by other transaction on this variable
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
+                List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
+                for (LockOnVariable lock : lockListOnThisVariable) {
+                    if (lock.getTransactionID() != transactionID) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private void writeToAllUpSites(int transactionID, int variableID, int value) {

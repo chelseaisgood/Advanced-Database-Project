@@ -11,7 +11,7 @@ public class LockOnVariable {
 
     private final int transactionID;
     private final int variableID;
-    private final TypeOfLock lockType;
+    private TypeOfLock lockType;
 
     public LockOnVariable(int transactionID, int variableID, TypeOfLock lockType){
         this.transactionID = transactionID;
@@ -29,6 +29,10 @@ public class LockOnVariable {
 
     public TypeOfLock getLockType() {
         return this.lockType;
+    }
+
+    public void setLockType(TypeOfLock type) {
+        this.lockType = type;
     }
 
     @Override
