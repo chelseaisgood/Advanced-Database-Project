@@ -21,6 +21,10 @@ public class Site {
     private LockTable lockTableOfSite;
     private boolean ifSiteWorking;
 
+    public int getSiteID () {
+        return this.id;
+    }
+
     public boolean getIfSiteWorking() {
         return ifSiteWorking;
     }
@@ -144,5 +148,28 @@ public class Site {
         return result;
     }
 
+
+    public void ReleaseThatLock(LockOnVariable lock) {
+        lockTableOfSite.delectThisLock(lock);
+        return;
+    }
+
+    public void CommitTheWrite(LockOnVariable lock) {
+        if ( !ifHaveThisVariable(lock.getVariableID())) {
+            System.out.println("[Failure] Cannot find this variable x" + lock.getVariableID() + " in this site " + id + ".");
+            return;
+        }
+        int tempVariableID = lock.getVariableID();
+        System.out.println("Now this variable to be updated is x" + tempVariableID);
+        for (Variable var : variableList) {
+            if (var.getID() == tempVariableID) {
+                int valueNew = var.getCurrValue();
+                var.setValue(valueNew);
+                System.out.println("Now this value is " + var.getValue());
+                return;
+            }
+        }
+        return;
+    }
 
 }

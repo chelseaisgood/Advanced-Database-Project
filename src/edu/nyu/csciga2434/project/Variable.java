@@ -18,6 +18,7 @@ public class Variable {
     private boolean availableForReading;
     private List<VariableHistory> variableHistoryList;
     private int currValue;
+    private boolean hasCopy;
 
     public boolean isAvailableForReading() {
         return availableForReading;
@@ -37,6 +38,11 @@ public class Variable {
         this.availableForReading = true;
         this.variableHistoryList = new ArrayList<>();
         variableHistoryList.add(new VariableHistory(this.value, 0));
+        if(id%2==0){
+            this.hasCopy = true;
+        }else{
+            this.hasCopy = false;
+        }
         setCurrValue(this.value);
     }
 
@@ -46,6 +52,10 @@ public class Variable {
 
     public int getValue(){
         return this.value;
+    }
+
+    public void setValue(int value){
+        this.value = value;
     }
 
     public String variableOutput(){

@@ -1,9 +1,8 @@
 package edu.nyu.csciga2434.project;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
 
 /**
  * User: Minda Fang
@@ -26,6 +25,7 @@ public class TransactionManager {
     private Map<Integer, Site> sites;
     private Map<Integer, Transaction> currentTransactions;
     private int time;
+    private Set<Integer> abortedTransactions;
     public Map<Integer, ArrayList<Operation>> waitList;
 
     public TransactionManager() {
@@ -34,10 +34,9 @@ public class TransactionManager {
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             sites.put(i, new Site(i));
         }
-
+        abortedTransactions = new HashSet<>();
         currentTransactions = new HashMap<>();
-        Map<Integer, ArrayList<Operation>> waitList = new HashMap<>();
-
+        waitList = new HashMap<>();
     }
 
     public void readCommand(String commandLine) {
@@ -67,7 +66,7 @@ public class TransactionManager {
                 int index = Integer.parseInt(op.substring(5, op.length() - 1));
                 dump(index);
             } else if (op.startsWith("end(")) {
-                endTransactionList.add(Integer.parseInt(op.substring(4, op.length() - 1)));
+                endTransactionList.add(Integer.parseInt(op.substring(5, op.length() - 1)));
             } else if (op.startsWith("fail(")) {
                 failSite(Integer.parseInt(op.substring(5, op.length() - 1)));
             } else if (op.startsWith("recover(")) {
@@ -94,18 +93,74 @@ public class TransactionManager {
         }
     }
 
+    private boolean hasAborted(int tid) {
+        return abortedTransactions.contains(tid);
+    }
 
-    private void endTransaction(Integer transactionID) {
-        if (this.currentTransactions.containsKey(transactionID)) {
-            Transaction transactionToBeEnded = this.currentTransactions.get(transactionID);
-            if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
-                System.out.println("Read-only transaction T" + transactionID + " has been ended.");
-            } else if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
-                //TODO
-            }
-        } else {
+    private void endTransaction(int transactionID) {
+
+        if (!this.currentTransactions.containsKey(transactionID)) {
             System.out.println("No such transaction T" + transactionID + " to end!");
+            return;
         }
+
+        if (hasAborted(transactionID)) {
+            System.out.println("[Aborted] This transaction T" + transactionID + " has been aborted!");
+            return;
+        }
+
+        Transaction transactionToBeEnded = this.currentTransactions.get(transactionID);
+
+        if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
+            System.out.println("Read-only transaction T" + transactionID + " has been ended.");
+            return;
+        }
+
+        //transaction to be ended is a read_write one
+        if (waitList != null && waitList.containsKey(transactionID) && waitList.get(transactionID).size() != 0) {
+            System.out.println("[Blocked] This transaction T" + transactionID + " has been blocked!");
+            return;
+        }
+
+        for (int i = 1; i < DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            List<LockOnVariable> table = tempSite.getLockTableOfSite().lockTable;
+            List<Integer> indexList= new ArrayList<>();
+            for (int j = 0; j < table.size(); j++) {
+                LockOnVariable lock = table.get(j);
+                String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
+                System.out.println("At site " + tempSite.getSiteID()
+                        + ", Transaction T" + lock.getTransactionID()
+                        + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
+                if (lock.getTransactionID() != transactionID) {
+                    continue;
+                }
+
+                if (lock.getLockType() == TypeOfLock.Read) {
+                    //tempSite.ReleaseThatLock(lock);
+                    indexList.add(j);
+                    continue;
+                }
+
+                if (lock.getLockType() == TypeOfLock.Write) {
+                    System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
+                            + " held by Transaction T" + lock.getTransactionID() + "." );
+                    tempSite.CommitTheWrite(lock);
+                    indexList.add(j);
+                    //tempSite.ReleaseThatLock(lock);
+                }
+            }
+
+            Collections.sort(indexList);
+
+            for (int k = indexList.size() - 1; k >= 0; k--) {
+                tempSite.ReleaseThatLock(table.get(k));
+            }
+
+        }
+        System.out.println("[Committed] This transaction T" + transactionID + " has been committed!");
+
+
     }
 
 
@@ -312,7 +367,7 @@ public class TransactionManager {
 
     private void insertToWaitList(Operation op, int transactionID) {
         ArrayList<Operation> ops;
-        if (waitList.containsKey(transactionID)) {
+        if (waitList != null && waitList.containsKey(transactionID)) {
             ops = waitList.get(transactionID);
             ops.add(op);
         } else {

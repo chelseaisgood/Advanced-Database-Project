@@ -90,4 +90,24 @@ public class LockTable {
         LockOnVariable lock = getAllLocksOnVariable(variableID).get(0);
         lock.setLockType(TypeOfLock.Write);
     }
+
+    public void delectThisLock(LockOnVariable lock) {
+        int index = Integer.MIN_VALUE;
+        for (int i = 0; i < lockTable.size(); i++) {
+            LockOnVariable thisLock = lockTable.get(i);
+            if (thisLock.getVariableID() == lock.getVariableID()
+                    && thisLock.getTransactionID() == lock.getTransactionID()
+                    && thisLock.getLockType() == lock.getLockType()) {
+                index = i;
+                String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "READ" : "WRITE";
+                System.out.println("[Success] The " + typeOfLock + " lock on variable x" + lock.getVariableID()
+                        + " held by Transaction T" + lock.getTransactionID() + " is removed.");
+                break;
+            }
+        }
+        if (index >= 0) {
+            lockTable.remove(index);
+        }
+        return;
+    }
 }
