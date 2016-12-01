@@ -94,4 +94,24 @@ public class Site {
     }
 
 
+    public boolean ifContainsVariable(int variableID) {
+        List<Variable> list = this.getVariableList();
+        for (Variable var : list) {
+            if (var.getID() == variableID) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void writeToVariableCurrValueInThisSite(int variableID, int value) {
+        List<Variable> list = this.getALLVariables();
+        for (Variable var : list) {
+            if (var.getID() == variableID) {
+                var.setCurrValue(value);
+                System.out.println("[Success] Variable x" + variableID + " at Site " + this.id + " has temporary uncommitted value: " + value + ".");
+                return;
+            }
+        }
+    }
 }

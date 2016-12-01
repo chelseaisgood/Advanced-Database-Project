@@ -292,10 +292,46 @@ public class TransactionManager {
         }
 
         if (transaction.ifAlreadyHaveWriteLock(variableID)) {
+            int numberOfLocksOnThisVariableByThisTransaction = transaction
+                    .getNumberOfLocksOnThisVariableByThisTransaction(TypeOfLock.Write, variableID);
+            int numberOfUpSitesContainingThisVariable = this.getNumberOfUpSitesContainingThisVariable(variableID);
+
+            if (numberOfLocksOnThisVariableByThisTransaction == numberOfUpSitesContainingThisVariable) {
+                //This transaction has all the write locks that it needs, which means it can write now.
+                this.writeToAllUpSites(transactionID, variableID, value);
+                Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
+                transaction.addToOperationHistory(op);
+            } else {
+
+            }
+        } else {
 
         }
 
+    }
 
+    private void writeToAllUpSites(int transactionID, int variableID, int value) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            if (this.sites.get(i).getIfSiteWorking() && this.sites.get(i).ifContainsVariable(variableID)
+                    && this.sites.get(i).getLockTableOfSite().ifThisTransactionHasWriteLockInThisLockTable(transactionID)) {
+                this.sites.get(i).writeToVariableCurrValueInThisSite(variableID, value);
+            }
+        }
+    }
+
+    private int getNumberOfUpSitesContainingThisVariable(int variableID) {
+        int result = 0;
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            if (this.sites.get(i).getIfSiteWorking()) {
+                List<Variable> variableList = this.sites.get(i).getALLVariables();
+                for (Variable var : variableList) {
+                    if (var.getID() == variableID) {
+                        result++;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
 

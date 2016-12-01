@@ -64,4 +64,14 @@ public class Transaction {
         }
         return false;
     }
+
+    public int getNumberOfLocksOnThisVariableByThisTransaction(TypeOfLock type, int variableID) {
+        int result = 0;
+        for (LockOnVariable lock : this.locksList) {
+            if (lock.getVariableID() == variableID && lock.getLockType() == type) {
+                result++;
+            }
+        }
+        return result;
+    }
 }

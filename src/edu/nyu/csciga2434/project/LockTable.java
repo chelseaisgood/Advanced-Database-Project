@@ -75,4 +75,13 @@ public class LockTable {
         LockOnVariable tempLock = new LockOnVariable(variableID, transactionID, lockType);
         this.lockTable.add(tempLock);
     }
+
+    public boolean ifThisTransactionHasWriteLockInThisLockTable(int transactionID) {
+        for (LockOnVariable lock : this.lockTable) {
+            if (lock.getTransactionID() == transactionID) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
