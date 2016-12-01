@@ -1,5 +1,5 @@
-begin(T1)
+begin(T1); begin(T3)
 beginRO(T2)
-R(T1, x11)
+R(T1, x12);W(T3, x1, 1234)
 W(T1, x1, 12345)
 dump(x1)

@@ -45,7 +45,8 @@ public class TransactionManager {
         this.time++;
         String[] operations = commandLine.split(";");
         ArrayList<Integer> endTransactionList = new ArrayList<>();
-        for (String op : operations) {
+        for (String opRaw : operations) {
+            String op = opRaw.trim();
             System.out.println(op);
             if (op.startsWith("begin(")) {
                 begin(Integer.parseInt(op.substring(7, op.length() - 1)), TypeOfTransaction.Read_Write);
@@ -316,20 +317,21 @@ public class TransactionManager {
             //This transaction has all the write locks that it needs, which means it can write now.
             System.out.println("[Success] Variable x" + variableID
                     + " on all up sites has their temp uncommitted value to be " + value
-                    + " by transaction T" + transactionID + ".");
+                    + " by transaction T" + transactionID + " and it have already had all the locks.");
             this.writeToAllUpSites(transactionID, variableID, value);
             Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
             transaction.addToOperationHistory(op);
         } else {
             //boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
-            if (findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
+            System.out.println("T" + transactionID + " & " + "x" + variableID);
+            if (!findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
                 this.writeToAllUpSites(transactionID, variableID, value);
                 Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
                 transaction.addToOperationHistory(op);
                 System.out.println("[Success] Variable x" + variableID
                         + " on all up sites has their temp uncommitted value to be " + value
-                        + " by transaction T" + transactionID + ".");
+                        + " by transaction T" + transactionID + " and it has already managed to get all the locks.");
             }
             else {
                 // put this transaction to the waiting list
@@ -347,8 +349,10 @@ public class TransactionManager {
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
                 if (lockListOnThisVariable.size() == 0) {
                     tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Write);
+                    //System.out.println("added!!!!!!!!");
                 } else {
                     tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
+                    //System.out.println("updated!!!!!!!!");
                 }
             }
         }
@@ -357,11 +361,15 @@ public class TransactionManager {
     private boolean findIfExistsConflictLockOnAllUpSites(int transactionID, int variableID) {
         //find if exists any read or write lock hold by other transaction on this variable
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            System.out.println("Looking at site" + i + ":");
             Site tempSite = this.sites.get(i);
             if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
+                System.out.println("Entering site" + i + ":");
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
                 for (LockOnVariable lock : lockListOnThisVariable) {
-                    if (lock.getTransactionID() != transactionID) {
+                    if (lock.getVariableID() == variableID && lock.getTransactionID() != transactionID) {
+                        //System.out.println(lock.getVariableID() + " &&&&&&& " + variableID);
+                        //System.out.println(lock.getTransactionID() + " &&&&&&& " + transactionID);
                         return true;
                     }
                 }

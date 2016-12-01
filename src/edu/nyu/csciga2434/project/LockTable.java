@@ -72,7 +72,8 @@ public class LockTable {
     }
 
     public void addLock(int variableID, int transactionID, TypeOfLock lockType) {
-        LockOnVariable tempLock = new LockOnVariable(variableID, transactionID, lockType);
+        LockOnVariable tempLock = new LockOnVariable(transactionID, variableID, lockType);
+        //System.out.println(tempLock.getLockType() +"+"+ tempLock.getTransactionID()+"+"+tempLock.getVariableID());
         this.lockTable.add(tempLock);
     }
 
