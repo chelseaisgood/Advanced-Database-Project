@@ -1,5 +1,5 @@
 # Advanced-Database-Project
-#  -- Replicated Concurrency Control and Recovery
+##  -- Replicated Concurrency Control and Recovery
 ##  Issue to be solved:
 1. create wait-for list for read-write transactions;
 2. create wait-for list for read-only transactions;
