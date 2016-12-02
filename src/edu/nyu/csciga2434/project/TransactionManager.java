@@ -42,8 +42,26 @@ public class TransactionManager {
     }
 
     public void readCommand(String commandLine) {
+        /**
+         *  1. process those buffered operations
+         *  2. process commands in this line
+         *  3. check deadlock
+         */
         //TODO
         this.time++;
+
+        if (bufferedWaitList.size() != 0) {
+            System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +".");
+            // TODO processing buffered operations before reading in the next line
+
+            Collections.sort(bufferedWaitList, new BufferedOperationComparator());
+
+            for (BufferedOperation BO: bufferedWaitList) {
+                processThisBufferedOperation(BO);
+            }
+            System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +".");
+        }
+
         String[] operations = commandLine.split(";");
         ArrayList<Integer> endTransactionList = new ArrayList<>();
         for (String opRaw : operations) {
@@ -78,6 +96,11 @@ public class TransactionManager {
         for (int i = 0; i < endTransactionList.size(); i++) {
             endTransaction(endTransactionList.get(i));
         }
+    }
+
+    private void processThisBufferedOperation(BufferedOperation bo) {
+        // TODO
+
     }
 
 
