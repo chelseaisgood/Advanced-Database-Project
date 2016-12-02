@@ -3,3 +3,4 @@ Reference:
 1. http://se.inf.ethz.ch/old/projects/daniel_moser/project_report_deadlock_detection.pdf
 2. http://www.geeksforgeeks.org/detect-cycle-in-a-graph/
 3. http://stackoverflow.com/questions/20576638/finding-all-cycles-in-a-directed-graph-using-recursive-backtracking
+4. http://stackoverflow.com/questions/19113189/detecting-cycles-in-a-graph-using-dfs-2-different-approaches-and-whats-the-dif
