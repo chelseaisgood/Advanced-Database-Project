@@ -1,6 +1,7 @@
 begin(T1); begin(T3)
 beginRO(T2); begin(T4);
 R(T1, x11); W(T3, x11, 1234)
+R(T1, x10);
 R(T1, x1);
 fail(3)
 fail(4)

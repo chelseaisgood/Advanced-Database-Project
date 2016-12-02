@@ -9,17 +9,22 @@ package edu.nyu.csciga2434.project;
 
 public class Operation {
 
-    private final int value;
-    private final int variableID;
-    private final int time;
+    private final int transactionID;
     private final TypeOfOperation operationType;
+    private final int siteID;
+    private final int variableID;
+    private final int value;
+    private final int time;
 
-    public Operation(int value, int variableID, int time, TypeOfOperation operationType) {
-        this.value = value;
-        this.variableID = variableID;
-        this.time = time;
+    public Operation(int transactionID, TypeOfOperation operationType, int siteID, int variableID, int value, int time) {
+        this.transactionID = transactionID;
         this.operationType = operationType;
+        this.siteID = siteID;
+        this.variableID = variableID;
+        this.value = value;
+        this.time = time;
     }
+
 
     public int getValue() {
         return value;
@@ -35,5 +40,13 @@ public class Operation {
 
     public TypeOfOperation getOperationType() {
         return operationType;
+    }
+
+    public int getTransactionID() {
+        return transactionID;
+    }
+
+    public int getSiteID() {
+        return siteID;
     }
 }

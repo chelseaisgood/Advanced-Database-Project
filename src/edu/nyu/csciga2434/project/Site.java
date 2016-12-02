@@ -124,6 +124,17 @@ public class Site {
         return false;
     }
 
+    public int returnThisVariableCurrentValue(int variableID) {
+        int result = 0;
+        for(Variable var : this.variableList) {
+            if (var.getID() == variableID) {
+                return var.getCurrValue();
+            }
+        }
+        return result;
+    }
+
+
     public int returnThisVariableValue(int variableID) {
         int result = 0;
         for(Variable var : this.variableList) {
