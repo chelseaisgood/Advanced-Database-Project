@@ -1,5 +1,6 @@
 package edu.nyu.csciga2434.project;
 
+import java.nio.Buffer;
 import java.util.*;
 
 /**
@@ -117,7 +118,8 @@ public class TransactionManager {
         }
 
         //transaction to be ended is a read_write one
-        if (waitList != null && waitList.containsKey(transactionID) && waitList.get(transactionID).size() != 0) {
+        // TODO
+        if (bufferedWaitList != null && ifExistsBufferedOperation(transactionID)) {
             System.out.println("[Blocked] This transaction T" + transactionID + " has been blocked!");
             return;
         }
@@ -160,6 +162,20 @@ public class TransactionManager {
         }
         System.out.println("[Committed] This transaction T" + transactionID + " has been committed!");
 
+    }
+
+    private boolean ifExistsBufferedOperation(int transactionID) {
+
+        if (bufferedWaitList == null) {
+            return false;
+        }
+
+        for (BufferedOperation BO : bufferedWaitList) {
+            if (BO.getTransactionID() == transactionID) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -332,10 +348,29 @@ public class TransactionManager {
             insertToWaitList(new BufferedOperation(TypeOfBufferedOperation.TransactionBlocked, transactionID, blockedTransactionID, variableID, typeOfTransaction, TypeOfOperation.OP_READ, time));
             // TODO put this wait-for relation in the wait for list
             waitForList.add(new WaitFor(transactionID, blockedTransactionID, getTransactionStartTime(transactionID)));
-            System.out.println("[Failure] R(T" + transactionID + ", x" + variableID + ") has to wait because it cannot acquire the read lock on that variable.");
+            System.out.println("[Failure] R(T" + transactionID + ", x" + variableID + ") has to wait because it cannot acquire the read lock on that variable blocked by Transaction T" + blockedTransactionID +".");
             return;
         }
     }
+
+    private ConflictingBufferedQueryReturn findExistingAnyConflictingLockOnAllUpSites(int transactionID, int variableID) {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            //System.out.println("Looking at site" + i + ":");
+            Site tempSite = this.sites.get(i);
+            if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
+                //System.out.println("Entering site" + i + ":");
+                List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
+                for (LockOnVariable lock : lockListOnThisVariable) {
+                    if (lock.getVariableID() == variableID && lock.getTransactionID() != transactionID) {
+                        System.out.println("Transaction T" + transactionID + " is blocked by Transaction T" + lock.getTransactionID() + " on Variable x" + variableID + ".");
+                        return new ConflictingBufferedQueryReturn(true, lock.getTransactionID());
+                    }
+                }
+            }
+        }
+        return new ConflictingBufferedQueryReturn(false, -1);
+    }
+
 
     private ConflictingBufferedQueryReturn findExistingAnyConflictingWriteLockOnAllUpSites(int transactionID, int variableID) {
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
@@ -469,6 +504,38 @@ public class TransactionManager {
             return;
         }
 
+        // check if there is any buffered operations left in the buffered operation list with the query on the same variable
+        // new TODO
+        ConflictingBufferedQueryReturn queryReturn = findExistingConflictingAnyBufferedOperation(variableID);
+
+        if (queryReturn.getIfExistsAnyConflictingBufferedOperations()) {
+            int waitForTransactionID = queryReturn.getBufferedConflictingTransactionID();
+            insertToWaitList(new BufferedOperation(TypeOfBufferedOperation.TransactionBlocked, transactionID, waitForTransactionID, variableID, TypeOfTransaction.Read_Write, TypeOfOperation.OP_WRITE, time));
+            // TODO put this wait-for relation in the wait for list
+            waitForList.add(new WaitFor(transactionID, waitForTransactionID, getTransactionStartTime(transactionID)));
+            System.out.println("Transaction T" + transactionID + " is blocked by Transaction T" + waitForTransactionID + " on Variable x" + variableID + ".");
+            return;
+        }
+
+        // if there is any up site available for writing this variable
+        boolean canFindThisVariable = false;
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            if (!tempSite.getIfSiteWorking()) {
+                continue;
+            }
+            if (tempSite.ifContainsVariable(variableID)) {
+                canFindThisVariable = true;
+                break;
+            }
+        }
+        if (!canFindThisVariable) {
+            //cannot find any up sites that contains this variable
+            insertToWaitList(new BufferedOperation(TypeOfBufferedOperation.VariableUnavaiable, transactionID, transactionID, variableID, TypeOfTransaction.Read_Write, TypeOfOperation.OP_WRITE, time));
+            System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
+            return;
+        }
+
         // if all up site that has this variable all have a write lock hold by this transaction
         boolean ifAllHaveAWriteLock = true;
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
@@ -486,38 +553,54 @@ public class TransactionManager {
             }
         }
 
-        //if (transaction.ifAlreadyHaveWriteLock(variableID) && ifAllHaveAWriteLock) {
         if (ifAllHaveAWriteLock) {
-//            int numberOfWriteLocksOnThisVariableByThisTransaction = transaction
-//                    .getNumberOfLocksOnThisVariableByThisTransaction(TypeOfLock.Write, variableID);
-//            int numberOfUpSitesContainingThisVariable = this.getNumberOfUpSitesContainingThisVariable(variableID);
             //This transaction has all the write locks that it needs, which means it can write now.
+            this.writeToAllUpSites(transactionID, variableID, value);
+            int siteNumber = 0; //don't care
+            Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteNumber, variableID, value, time);
+            transaction.addToOperationHistory(op);
             System.out.println("[Success] Variable x" + variableID
                     + " on all up sites has their temp uncommitted value to be " + value
                     + " by transaction T" + transactionID + " and it have already had all the locks.");
-            this.writeToAllUpSites(transactionID, variableID, value);
-            Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
-            transaction.addToOperationHistory(op);
+            return;
         } else {
             //boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
             System.out.println("T" + transactionID + " & " + "x" + variableID);
             if (!findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
-                this.writeToAllUpSites(transactionID, variableID, value);
-                Operation op = new Operation(value, variableID, time, TypeOfOperation.OP_WRITE);
+                int siteNumber = 0; //don't care
+                Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteNumber, variableID, value, time);
                 transaction.addToOperationHistory(op);
                 System.out.println("[Success] Variable x" + variableID
                         + " on all up sites has their temp uncommitted value to be " + value
-                        + " by transaction T" + transactionID + " and it has already managed to get all the locks.");
+                        + " by transaction T" + transactionID + " and it have already had all the locks.");
+                return;
             }
             else {
-                // put this transaction to the waiting list
-                insertToWaitList(transactionID, new Operation(value, variableID, time, TypeOfOperation.OP_WRITE));
-                System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
-                // TODO
+                //TODO
+                //There is some conflicting lock
+                ConflictingBufferedQueryReturn queryReturnNew = findExistingAnyConflictingLockOnAllUpSites(transactionID, variableID);
+                int blockedTransactionID = queryReturnNew.getBufferedConflictingTransactionID();
+
+                insertToWaitList(new BufferedOperation(TypeOfBufferedOperation.TransactionBlocked, transactionID, blockedTransactionID, variableID, TypeOfTransaction.Read_Write, TypeOfOperation.OP_WRITE, time));
+                // TODO put this wait-for relation in the wait for list
+                waitForList.add(new WaitFor(transactionID, blockedTransactionID, getTransactionStartTime(transactionID)));
+                System.out.println("[Failure] W(T" + transactionID + ", x" + variableID + ", " + value + ") has to wait because it cannot acquire the write lock on that variable blocked by Transaction T" + blockedTransactionID +".");
+                return;
+
+
             }
         }
 
+    }
+
+    private ConflictingBufferedQueryReturn findExistingConflictingAnyBufferedOperation(int variableID) {
+        for (BufferedOperation BO : bufferedWaitList) {
+            if (BO.getVariableID() == variableID) {
+                return new ConflictingBufferedQueryReturn(true, BO.getTransactionID());
+            }
+        }
+        return null;
     }
 
     private void getAllWriteLockedOnAllUpSitesByThisTransaction(int transactionID, int variableID) {
