@@ -109,7 +109,7 @@ public class Site {
         for (Variable var : list) {
             if (var.getID() == variableID) {
                 var.setCurrValue(value);
-                System.out.println("[Success] Variable x" + variableID + " at Site " + this.id + " has temporary uncommitted value: " + value + ".");
+                System.out.println("[Success] Variable x" + variableID + " at Site " + this.id + " has temporary uncommitted value: " + var.getCurrValue() + ".");
                 return;
             }
         }
@@ -161,6 +161,7 @@ public class Site {
         for (Variable var : variableList) {
             if (var.getID() == tempVariableID) {
                 int valueNew = var.getCurrValue();
+                System.out.println("Now this current value is " + valueNew);
                 var.setValue(valueNew);
                 System.out.println("Now this value is " + var.getValue());
                 return;

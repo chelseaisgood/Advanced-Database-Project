@@ -38,6 +38,7 @@ public class TransactionManager {
         abortedTransactions = new HashSet<>();
         currentTransactions = new HashMap<>();
         bufferedWaitList = new ArrayList<>();
+        waitForList = new ArrayList<>();
     }
 
     public void readCommand(String commandLine) {
@@ -405,7 +406,7 @@ public class TransactionManager {
                 return new ConflictingBufferedQueryReturn(true, BO.getTransactionID());
             }
         }
-        return null;
+        return new ConflictingBufferedQueryReturn(false, -1);
     }
 
     private ReadReturn readCurrentValueOfVariableFromOneUpSite(int variableID) {
@@ -568,6 +569,7 @@ public class TransactionManager {
             System.out.println("T" + transactionID + " & " + "x" + variableID);
             if (!findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
+                this.writeToAllUpSites(transactionID, variableID, value);
                 int siteNumber = 0; //don't care
                 Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteNumber, variableID, value, time);
                 transaction.addToOperationHistory(op);
@@ -600,7 +602,7 @@ public class TransactionManager {
                 return new ConflictingBufferedQueryReturn(true, BO.getTransactionID());
             }
         }
-        return null;
+        return new ConflictingBufferedQueryReturn(false, -1);
     }
 
     private void getAllWriteLockedOnAllUpSitesByThisTransaction(int transactionID, int variableID) {
