@@ -12,15 +12,17 @@ public class BufferedOperation {
     private final int variableID;
     private final TypeOfTransaction typeOfTransaction;
     private final TypeOfOperation typeOfOperation;
+    private final int value;
     private final int bufferedTime;
 
-    public BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation, int transactionID, int previousWaitingTransactionID, int variableID, TypeOfTransaction typeOfTransaction, TypeOfOperation typeOfOperation, int bufferedTime) {
+    public BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation, int transactionID, int previousWaitingTransactionID, int variableID, TypeOfTransaction typeOfTransaction, TypeOfOperation typeOfOperation, int value, int bufferedTime) {
         this.typeOfBufferedOperation = typeOfBufferedOperation;
         this.transactionID = transactionID;
         this.previousWaitingTransactionID = previousWaitingTransactionID;
         this.variableID = variableID;
         this.typeOfTransaction = typeOfTransaction;
         this.typeOfOperation = typeOfOperation;
+        this.value = value;
         this.bufferedTime = bufferedTime;
     }
 
@@ -50,5 +52,9 @@ public class BufferedOperation {
 
     public int getPreviousWaitingTransactionID() {
         return previousWaitingTransactionID;
+    }
+
+    public int getValue() {
+        return value;
     }
 }
