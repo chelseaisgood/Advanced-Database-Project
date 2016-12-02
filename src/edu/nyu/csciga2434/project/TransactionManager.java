@@ -532,6 +532,188 @@ public class TransactionManager {
         }
     }
 
+
+    /**Parts with the deadlock checking
+     * 1. given wait-for lists
+     * 2. generate matrix
+     * 3. if exists cycle {
+     * 4.   find one path
+     * 5.   find one to abort
+     * 6.   export that one to abortlist
+     * 7.   revise the matrix
+     * 8. }
+     */
+
+    private static List<Integer> deadLockRemoval(List<WaitFor> waitForList) {
+        Set<Integer> set = new HashSet<>();
+        List<Integer> list = new ArrayList<>();
+
+        for (WaitFor waitFor : waitForList) {
+            int from  = waitFor.getFrom();
+            int to  = waitFor.getTo();
+            if (!set.contains(from)) {
+                set.add(from);
+                list.add(from);
+            }
+            if (!set.contains(to)) {
+                set.add(to);
+                list.add(to);
+            }
+        }
+
+        Collections.sort(list);
+
+        int sizeOfMat = list.size();
+        int sizeOfWaitForList = waitForList.size();
+        System.out.println("Size of this list is " + sizeOfMat + ".");
+        int[][] mat = new int[sizeOfMat][sizeOfMat];
+
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < sizeOfMat; i++) {
+            map.put(list.get(i), i);
+        }
+
+        for (int i = 0; i < sizeOfWaitForList; i++) {
+            WaitFor waitFor = waitForList.get(i);
+            int from  = waitFor.getFrom();
+            int to  = waitFor.getTo();
+            //System.out.println("From " + from + " to " + to + ".");
+            //System.out.println("From " + map.get(from) + " to " + map.get(to) + ".");
+            mat [map.get(from)][map.get(to)] = 1;
+        }
+
+        printMatrix(mat);
+
+        List<Integer> abortTransactionIDList = new ArrayList<>();
+
+        Map<Boolean, Set<Integer>> cycleCheckResult = checkCycle(mat);
+        while (cycleCheckResult.containsKey(true)) {
+            System.out.println("A cycle is found!");
+            Set<Integer> tempHashSet = cycleCheckResult.get(true);
+            Set<Integer> translatedSet = translateSet(tempHashSet, list);
+
+            int abortedTransactionID = -1;
+            int maxTime = -1;
+            for (int index : translatedSet) {
+                int translatedIndex = index;
+                int tempTime = getWaitForTime (waitForList, translatedIndex);
+                if (tempTime > maxTime) {
+                    abortedTransactionID = translatedIndex;
+                }
+            }
+            System.out.println("abortedTransactionID is Index #" + abortedTransactionID + "!" );
+            abortTransactionIDList.add(abortedTransactionID);
+            System.out.println("Setting both row and column #" + map.get(abortedTransactionID) + " to be zero!" );
+            reviceTheMat(mat, map.get(abortedTransactionID));
+            printMatrix(mat);
+            cycleCheckResult = checkCycle(mat);
+        }
+
+        printMatrix(mat);
+
+        return abortTransactionIDList;
+    }
+
+    private static void reviceTheMat(int[][] mat, int clearID) {
+        int size = mat.length;
+        for (int i = 0; i < size; i++) {
+            mat[i][clearID] = 0;
+            mat[clearID][i] = 0;
+        }
+        return;
+    }
+
+    private static int getWaitForTime(List<WaitFor> waitForList, int translatedIndex) {
+        for (WaitFor waitFor : waitForList) {
+            if (waitFor.getFrom() == translatedIndex) {
+                return waitFor.getTime();
+            }
+        }
+        return -1;
+    }
+
+    private static Set<Integer> translateSet(Set<Integer> tempHashSet, List<Integer> list) {
+        Set<Integer> result = new HashSet<>();
+        for (int index : tempHashSet) {
+            int translatedIndex = list.get(index);
+            result.add(translatedIndex);
+            System.out.println("Translated Index #" + translatedIndex + " is translated!" );
+        }
+        System.out.println("One translation is done!");
+        return result;
+    }
+
+    private static Map<Boolean, Set<Integer>> checkCycle(int[][] mat) {
+        int size = mat.length;
+        List<Vertex> V= new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Vertex vertex = new Vertex();
+            V.add(vertex);
+        }
+
+        for (int index = 0; index < size; index++) {
+            Vertex tempVertex = V.get(index);
+            if (tempVertex.getColor() == Color.white) {
+                System.out.println("New HashSet is created!");
+                Set<Integer> tempSet = new HashSet<>();
+                int tempIndex = index;
+                if (tempSet.contains(tempIndex)) {
+                    Map<Boolean, Set<Integer>> retMap  = new HashMap<>();
+                    retMap.put(true, tempSet);
+                    return retMap;
+                }
+                tempSet.add(tempIndex);
+                System.out.println("Index #" + tempIndex + " is added.");
+                tempVertex.setColor(Color.black);
+                int[] tempRow = mat[tempIndex];
+                int nextNodeIndex = getNextIndex(tempRow);
+                while (nextNodeIndex >= 0) {
+                    tempIndex = nextNodeIndex;
+                    if (tempSet.contains(tempIndex)) {
+                        Map<Boolean, Set<Integer>> retMap  = new HashMap<>();
+                        retMap.put(true, tempSet);
+                        return retMap;
+                    }
+                    tempSet.add(tempIndex);
+                    System.out.println("Index #" + tempIndex + " is added.");
+                    tempVertex = V.get(tempIndex);
+                    tempVertex.setColor(Color.black);
+                    tempRow = mat[tempIndex];
+                    nextNodeIndex = getNextIndex(tempRow);
+                }
+            }
+        }
+
+        Map<Boolean, Set<Integer>> finalMap  = new HashMap<>();
+        finalMap.put(false, null);
+        return finalMap;
+    }
+
+    private static int getNextIndex(int[] tempRow) {
+        for (int i = 0; i < tempRow.length; i++) {
+            if (tempRow[i] != 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    private static void printMatrix (int[][] mat) {
+        int size = mat.length;
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (j == size - 1) {
+                    System.out.println(mat[i][j]);
+                    continue;
+                }
+                System.out.print(mat[i][j] + " ");
+            }
+        }
+    }
+
+
+
     //keep this part for backup
 /*
             //oldddddddddddddddddddddddddddddddddddddddddddd
