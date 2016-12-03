@@ -184,40 +184,48 @@ public class TransactionManager {
 
 
     /**
-     *  Check validity before actually read the variable value
-     *  Operation time is passed in order not to lose the priority of this operation
+     *  Read the variable value
      */
     private void read(int transactionID, int variableID, TypeOfTransaction typeOfTransaction, int opTime) {
+        // don't need to check the validity of transaction ID and variable ID
+        //      since it is already done before calling this function
         Transaction transaction = currentTransactions.get(transactionID);
         if (typeOfTransaction == TypeOfTransaction.Read_Only) {
             for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
                 Site tempSite = sites.get(i);
+                // bypass the not working site
                 if (!tempSite.getIfSiteWorking()) {
                     continue;
                 }
+                // get the variable list in this site
                 List<Variable> variablesInThisSite = tempSite.getALLVariables();
                 for (Variable var : variablesInThisSite) {
+                    // variable which is not available for read will be ignored
                     if (var.getID() == variableID && var.isAvailableForReading()) {
-                        //parse the VariableHistory of this Variable and select the correct value to read
+                        // parse the VariableHistory of this Variable and select the correct value to read
                         List<VariableHistory> variableHistory = var.getVariableHistoryList();
-                        int maxTime = Integer.MIN_VALUE; //time counter
-                        int maxIndex = -1;  //index in the List which has max time
+                        int maxTime = Integer.MIN_VALUE; //initial return time to be a invalid value first
+                        int maxIndex = -1;  //index of the variable history with the latest time
                         for (int j = 0; j < variableHistory.size(); j++) {
                             VariableHistory vHistoryTemp = variableHistory.get(j);
+                            // if this variable history has time greater than current recorded max time
+                            // and if this variable history has time before the start-time of this read-only transaction
+                            // then we should select this record as current optimal choice
                             if (vHistoryTemp.getTime() > maxTime && vHistoryTemp.getTime() < transaction.getStartTime()) {
                                 maxIndex = j;
                                 maxTime = vHistoryTemp.getTime();
                             }
                         }
                         if (maxIndex != -1) {
+                            // get read value from the chosen record in the variable's record history
                             int readValue = variableHistory.get(maxIndex).getValue();
                             System.out.println("[Success] The snapshot value of variable x" + variableID + " is " + readValue + ".");
                             Operation op = new Operation(variableID, TypeOfOperation.OP_READ, i, variableID, readValue, opTime);
-                            // TODO
+                            // put successful operation into SiteTransactionHistory record stored inside this Transaction Manager
                             SiteTransactionHistory.get(i).add(op);
+                            // put successful operation into operationHistory record stored inside every transaction
                             transaction.addToOperationHistory(op);
                             return;
-                            // put successful operation into operationHistory record stored inside every transaction
                         }
                     }
                 }
