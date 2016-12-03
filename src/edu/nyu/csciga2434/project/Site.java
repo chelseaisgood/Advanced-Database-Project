@@ -151,7 +151,26 @@ public class Site {
         return;
     }
 
-    public void CommitTheWrite(LockOnVariable lock) {
+    public void CommitTheWrite(LockOnVariable lock, int commitTime) {
+        if ( !ifHaveThisVariable(lock.getVariableID())) {
+            System.out.println("[Failure] Cannot find this variable x" + lock.getVariableID() + " in this site " + id + ".");
+            return;
+        }
+        int tempVariableID = lock.getVariableID();
+        System.out.println("Now this variable to be updated is x" + tempVariableID);
+        for (Variable var : variableList) {
+            if (var.getID() == tempVariableID) {
+                int valueNew = var.getCurrValue();
+                var.setValue(valueNew);
+                System.out.println("Now this value is " + var.getValue() + " at time " + commitTime + ".");
+                var.getVariableHistoryList().add(new VariableHistory(valueNew, commitTime));
+                return;
+            }
+        }
+        return;
+    }
+
+    public void ReverseTheWrite(LockOnVariable lock) {
         if ( !ifHaveThisVariable(lock.getVariableID())) {
             System.out.println("[Failure] Cannot find this variable x" + lock.getVariableID() + " in this site " + id + ".");
             return;

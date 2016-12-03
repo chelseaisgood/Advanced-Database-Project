@@ -39,6 +39,10 @@ public class Transaction {
 		return startTime;
 	}
 
+    public List<Operation> getOperationHistory() {
+        return operationHistory;
+    }
+
     public void addToOperationHistory(Operation op) {
         this.operationHistory.add(op);
     }
