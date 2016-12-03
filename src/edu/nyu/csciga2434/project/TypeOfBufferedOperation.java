@@ -6,6 +6,6 @@ package edu.nyu.csciga2434.project;
  * Time: 1:13 PM
  */
 public enum TypeOfBufferedOperation {
-    VariableUnavaiable,
+    VariableUnavailable,
     TransactionBlocked
 }
