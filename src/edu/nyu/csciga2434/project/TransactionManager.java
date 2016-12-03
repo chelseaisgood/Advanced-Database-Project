@@ -48,29 +48,29 @@ public class TransactionManager {
     }
 
     public void readCommand(String commandLine) {
+
         /**
          *  1. process those buffered operations
          *  2. process commands in this line
          *  3. check deadlock
          */
-        //TODO
-        this.time++;
-        System.out.println("");
-        System.out.println("[New Round] Time " + time);
-        List<BufferedOperation> oldBufferedWaitList = bufferedWaitList;
-        bufferedWaitList = new ArrayList<>();
-        waitForList = new ArrayList<>();
 
+        this.time++;    // next tick
+        System.out.println("\n" + "[New Round] Time " + time);
+
+        List<BufferedOperation> oldBufferedWaitList = bufferedWaitList; //a copy of the old buffered wait list
+        bufferedWaitList = new ArrayList<>();   // recreate the buffered wait list
+        waitForList = new ArrayList<>();    // recreate the wait for list
+
+        // processing buffered operations before reading in the next line of commands
         if (oldBufferedWaitList.size() != 0) {
-            System.out.println("[Report] The size of the buffered wait list is " + oldBufferedWaitList.size() + " at time " + time +".");
-            // TODO processing buffered operations before reading in the next line
+            System.out.println("[Report] The size of the buffered wait list is " + oldBufferedWaitList.size() + " at the end of time " + (time - 1) +".");
 
+            // processing buffered operations according to the sequence of buffered time
             Collections.sort(oldBufferedWaitList, new BufferedOperationComparator());
+            oldBufferedWaitList.forEach(this::processThisBufferedOperation);
 
-            for (BufferedOperation BO: oldBufferedWaitList) {
-                processThisBufferedOperation(BO);
-            }
-            System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +".");
+            System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +" after processing all buffered operations.");
         }
 
 
@@ -119,130 +119,24 @@ public class TransactionManager {
         }
     }
 
-    private void abort(int abortTransactionID) {
-//        private Map<Integer, Transaction> currentTransactions;
-//        private Set<Integer> abortedTransactions;
-//        public List<BufferedOperation> bufferedWaitList;
-//        private List<WaitFor> waitForList;
-        clearAllRelatedBufferedWaitList(abortTransactionID);
-        clearAllRelatedWaitForList(abortTransactionID);
-        cancelOffTotal(abortTransactionID);
-        addToAbortedTransaction(abortTransactionID);
-        removeFromCurrentTransaction(abortTransactionID);
-        removeFromAllRelatedSiteTransaction(abortTransactionID);
-    }
 
-    private void removeFromAllRelatedSiteTransaction(int abortTransactionID) {
-        for (int i = 1; i < DEFAULT_SITE_TOTAL_NUMBER; i++) {
-            List<Operation> opList = SiteTransactionHistory.get(i);
-            List<Operation> filtered = new ArrayList<>();
-            for (Operation o : opList) {
-                if (o.getTransactionID() == abortTransactionID) {
-                    filtered.add(o);
-                }
-            }
-            opList.removeAll(filtered);
-        }
-    }
-
-    private void removeFromCurrentTransaction(int abortTransactionID) {
-        currentTransactions.remove(abortTransactionID);
-    }
-
-    private void addToAbortedTransaction(int abortTransactionID) {
-        abortedTransactions.add(abortTransactionID);
-    }
-
-    private void cancelOffTotal(int abortTransactionID) {
-        Transaction transaction = currentTransactions.get(abortTransactionID);
-        List<Operation> opList = transaction.getOperationHistory();
-        for (Operation o : opList) {
-            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
-                Site tempSite = this.sites.get(i);
-                if (tempSite.getIfSiteWorking() == false) {
-                    continue;
-                }
-                List<LockOnVariable> table = tempSite.getLockTableOfSite().lockTable;
-                List<Integer> indexList= new ArrayList<>();
-                for (int j = 0; j < table.size(); j++) {
-                    LockOnVariable lock = table.get(j);
-                    String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
-                    System.out.println("At site " + tempSite.getSiteID()
-                            + ", Transaction T" + lock.getTransactionID()
-                            + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
-
-                    if (lock.getTransactionID() != abortTransactionID) {
-                        continue;
-                    }
-
-                    if (lock.getLockType() == TypeOfLock.Read) {
-                        //tempSite.ReleaseThatLock(lock);
-                        indexList.add(j);
-                        continue;
-                    }
-
-                    if (lock.getLockType() == TypeOfLock.Write) {
-                        System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
-                                + " held by Transaction T" + lock.getTransactionID() + "." );
-                        tempSite.ReverseTheWrite(lock);
-                        indexList.add(j);
-                        //tempSite.ReleaseThatLock(lock);
-                    }
-                }
-
-                Collections.sort(indexList);
-
-                for (int k = indexList.size() - 1; k >= 0; k--) {
-                    tempSite.ReleaseThatLock(table.get(k));
-                }
-
-            }
-        }
-    }
-
-    private void clearAllRelatedWaitForList(int abortTransactionID) {
-        //  List<WaitFor> waitForList;
-        //  WaitFor(int from, int to, int time)
-
-        List<WaitFor> found = new ArrayList<>();
-        for (WaitFor WF : waitForList) {
-            if (WF.getFrom() == abortTransactionID
-                    || WF.getTo() == abortTransactionID) {
-                found.add(WF);
-            }
-        }
-        waitForList.removeAll(found);
-    }
-
-    private void clearAllRelatedBufferedWaitList(int abortTransactionID) {
-        //  List<BufferedOperation> bufferedWaitList;
-        //  BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation,
-        //                      int transactionID, int previousWaitingTransactionID,
-        //                      int variableID, TypeOfTransaction typeOfTransaction,
-        //                      TypeOfOperation typeOfOperation, int value, int bufferedTime) {
-
-        List<BufferedOperation> found = new ArrayList<>();
-        for (BufferedOperation BO : bufferedWaitList) {
-            if (BO.getVariableID() == abortTransactionID
-                    || BO.getPreviousWaitingTransactionID() == abortTransactionID) {
-                found.add(BO);
-            }
-        }
-        bufferedWaitList.removeAll(found);
-    }
-
+    /**
+     *  This function process one buffered operation by simply re-executing it.
+     *  Buffered time is kept in order not to lose the priority info of this operation.
+     *  This function is called at the start of function readCommand
+     */
     private void processThisBufferedOperation(BufferedOperation bo) {
         // BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation, int transactionID,
         //                      int previousWaitingTransactionID, int variableID,
         //                      TypeOfTransaction typeOfTransaction, TypeOfOperation typeOfOperation,
         //                      int bufferedTime)
 
-        System.out.println("Now processing the operation buffered at time " + bo.getBufferedTime()
-                            + " which is the " + bo.getTypeOfTransaction() + " transaction T"
-                            + bo.getTransactionID() + " asking to " + bo.getTypeOfOperation()
-                            + " on variable x" + bo.getVariableID() + " with value " + bo.getValue()
-                            + " but previously blocked by Transaction T"
-                            + bo.getPreviousWaitingTransactionID() + ".");
+        System.out.println("[Report] Now processing the operation buffered at time " + bo.getBufferedTime()
+                + " which is the " + bo.getTypeOfTransaction() + " transaction T"
+                + bo.getTransactionID() + " asking to " + bo.getTypeOfOperation()
+                + " on variable x" + bo.getVariableID() + " with value " + bo.getValue()
+                + " but previously blocked by Transaction T"
+                + bo.getPreviousWaitingTransactionID() + ".");
 
         if (bo.getTypeOfOperation() == TypeOfOperation.OP_READ) {
             read(bo.getTransactionID(), bo.getVariableID(), bo.getTypeOfTransaction(), bo.getBufferedTime());
@@ -252,6 +146,10 @@ public class TransactionManager {
     }
 
 
+    /**
+     *  Begin transaction as ordered.
+     *  Put successfully initiated transactions into current transaction hash map.
+     */
     private void begin(int transactionID, TypeOfTransaction typeOfTransaction) {
         if (!currentTransactions.containsKey(transactionID)) {
             Transaction newTransaction = new Transaction(transactionID, typeOfTransaction, time);
@@ -266,144 +164,11 @@ public class TransactionManager {
         }
     }
 
-    private boolean hasAborted(int tid) {
-        return abortedTransactions.contains(tid);
-    }
 
-    private void endTransaction(int transactionID) {
-
-        System.out.println("[Report] Now analyzing whether Transaction T" + transactionID + " can commit or not.");
-
-        if (!this.currentTransactions.containsKey(transactionID)) {
-            System.out.println("No such transaction T" + transactionID + " to end!");
-            return;
-        }
-
-        if (hasAborted(transactionID)) {
-            System.out.println("[Aborted] This transaction T" + transactionID + " has been aborted!");
-            return;
-        }
-
-        Transaction transactionToBeEnded = this.currentTransactions.get(transactionID);
-
-        if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
-            System.out.println("Read-only transaction T" + transactionID + " has been ended.");
-            // TODO
-            return;
-        }
-
-        //transaction to be ended is a read_write one
-        // TODO
-        if (bufferedWaitList != null && ifExistsBufferedOperation(transactionID)) {
-            System.out.println("[Blocked] This transaction T" + transactionID + " has been blocked!");
-            return;
-        }
-
-
-        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
-            Site tempSite = this.sites.get(i);
-            List<LockOnVariable> table = tempSite.getLockTableOfSite().lockTable;
-            List<Integer> indexList= new ArrayList<>();
-            for (int j = 0; j < table.size(); j++) {
-                LockOnVariable lock = table.get(j);
-                String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
-                System.out.println("At site " + tempSite.getSiteID()
-                        + ", Transaction T" + lock.getTransactionID()
-                        + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
-                if (lock.getTransactionID() != transactionID) {
-                    continue;
-                }
-
-                if (lock.getLockType() == TypeOfLock.Read) {
-                    //tempSite.ReleaseThatLock(lock);
-                    indexList.add(j);
-                    continue;
-                }
-
-                if (lock.getLockType() == TypeOfLock.Write) {
-                    System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
-                            + " held by Transaction T" + lock.getTransactionID() + "." );
-                    tempSite.CommitTheWrite(lock, time);
-                    indexList.add(j);
-                    //tempSite.ReleaseThatLock(lock);
-                }
-            }
-
-            Collections.sort(indexList);
-
-            for (int k = indexList.size() - 1; k >= 0; k--) {
-                tempSite.ReleaseThatLock(table.get(k));
-            }
-
-        }
-
-        addToCommittedTransaction(transactionID);
-        removeFromCurrentTransaction(transactionID);
-        removeFromAllRelatedSiteTransaction(transactionID);
-
-        System.out.println("[Committed] This transaction T" + transactionID + " has been committed!");
-
-    }
-
-    private void addToCommittedTransaction(int transactionID) {
-        committedTransactions.add(transactionID);
-    }
-
-
-    private boolean ifExistsBufferedOperation(int transactionID) {
-
-        if (bufferedWaitList == null) {
-            return false;
-        }
-
-        for (BufferedOperation BO : bufferedWaitList) {
-            if (BO.getTransactionID() == transactionID) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    private void failSite(int siteID) {
-        if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == true) {
-            sites.get(siteID).failThisSite();
-            List<Integer> affectedTransactionList = outputAffectedTransactionList(siteID);
-            for (Integer number : affectedTransactionList) {
-                toBeAbortedList.add(number);
-            }
-            // clear Site History Record
-            SiteTransactionHistory.remove(siteID);
-            SiteTransactionHistory.put(siteID, new ArrayList<>());
-        } else {
-            System.out.println("[Failure] Fail to fail this site. Maybe it is still down or not even exists!");
-        }
-    }
-
-    private List<Integer> outputAffectedTransactionList(int siteID) {
-        List<Operation> tempList = SiteTransactionHistory.get(siteID);
-        List<Integer> resultList = new ArrayList<>();
-        Set<Integer> set = new HashSet<>();
-        // Operation(int transactionID, TypeOfOperation operationType,
-        //              int siteID, int variableID, int value, int time)
-        for (Operation o : tempList) {
-            int tID = o.getTransactionID();
-            if (!set.contains(tID)) {
-                set.add(tID);
-                resultList.add(tID);
-            }
-        }
-        return resultList;
-    }
-
-    private void recoverSite(int siteID) {
-        if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == false) {
-            sites.get(siteID).recoverThisSite();
-        } else {
-            System.out.println("[Failure] Fail to recover this site. Maybe it is still working or not even exists!");
-        }
-    }
-
+    /**
+     *  Check validity before actually read the variable value
+     *  Operation time is passed in order not to lose the priority of this operation
+     */
     private void readVariableValue(int transactionID, int variable) {
         if (currentTransactions.containsKey(transactionID) && variable >= 1 && variable <= DEFAULT_VARIABLE_TOTAL_NUMBER) {
             Transaction t = currentTransactions.get(transactionID);
@@ -418,6 +183,10 @@ public class TransactionManager {
     }
 
 
+    /**
+     *  Check validity before actually read the variable value
+     *  Operation time is passed in order not to lose the priority of this operation
+     */
     private void read(int transactionID, int variableID, TypeOfTransaction typeOfTransaction, int opTime) {
         Transaction transaction = currentTransactions.get(transactionID);
         if (typeOfTransaction == TypeOfTransaction.Read_Only) {
@@ -564,6 +333,288 @@ public class TransactionManager {
             return;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private void abort(int abortTransactionID) {
+//        private Map<Integer, Transaction> currentTransactions;
+//        private Set<Integer> abortedTransactions;
+//        public List<BufferedOperation> bufferedWaitList;
+//        private List<WaitFor> waitForList;
+        clearAllRelatedBufferedWaitList(abortTransactionID);
+        clearAllRelatedWaitForList(abortTransactionID);
+        cancelOffTotal(abortTransactionID);
+        addToAbortedTransaction(abortTransactionID);
+        removeFromCurrentTransaction(abortTransactionID);
+        removeFromAllRelatedSiteTransaction(abortTransactionID);
+    }
+
+    private void removeFromAllRelatedSiteTransaction(int abortTransactionID) {
+        for (int i = 1; i < DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            List<Operation> opList = SiteTransactionHistory.get(i);
+            List<Operation> filtered = new ArrayList<>();
+            for (Operation o : opList) {
+                if (o.getTransactionID() == abortTransactionID) {
+                    filtered.add(o);
+                }
+            }
+            opList.removeAll(filtered);
+        }
+    }
+
+    private void removeFromCurrentTransaction(int abortTransactionID) {
+        currentTransactions.remove(abortTransactionID);
+    }
+
+    private void addToAbortedTransaction(int abortTransactionID) {
+        abortedTransactions.add(abortTransactionID);
+    }
+
+    private void cancelOffTotal(int abortTransactionID) {
+        Transaction transaction = currentTransactions.get(abortTransactionID);
+        List<Operation> opList = transaction.getOperationHistory();
+        for (Operation o : opList) {
+            for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+                Site tempSite = this.sites.get(i);
+                if (tempSite.getIfSiteWorking() == false) {
+                    continue;
+                }
+                List<LockOnVariable> table = tempSite.getLockTableOfSite().lockTable;
+                List<Integer> indexList= new ArrayList<>();
+                for (int j = 0; j < table.size(); j++) {
+                    LockOnVariable lock = table.get(j);
+                    String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
+                    System.out.println("At site " + tempSite.getSiteID()
+                            + ", Transaction T" + lock.getTransactionID()
+                            + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
+
+                    if (lock.getTransactionID() != abortTransactionID) {
+                        continue;
+                    }
+
+                    if (lock.getLockType() == TypeOfLock.Read) {
+                        //tempSite.ReleaseThatLock(lock);
+                        indexList.add(j);
+                        continue;
+                    }
+
+                    if (lock.getLockType() == TypeOfLock.Write) {
+                        System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
+                                + " held by Transaction T" + lock.getTransactionID() + "." );
+                        tempSite.ReverseTheWrite(lock);
+                        indexList.add(j);
+                        //tempSite.ReleaseThatLock(lock);
+                    }
+                }
+
+                Collections.sort(indexList);
+
+                for (int k = indexList.size() - 1; k >= 0; k--) {
+                    tempSite.ReleaseThatLock(table.get(k));
+                }
+
+            }
+        }
+    }
+
+    private void clearAllRelatedWaitForList(int abortTransactionID) {
+        //  List<WaitFor> waitForList;
+        //  WaitFor(int from, int to, int time)
+
+        List<WaitFor> found = new ArrayList<>();
+        for (WaitFor WF : waitForList) {
+            if (WF.getFrom() == abortTransactionID
+                    || WF.getTo() == abortTransactionID) {
+                found.add(WF);
+            }
+        }
+        waitForList.removeAll(found);
+    }
+
+    private void clearAllRelatedBufferedWaitList(int abortTransactionID) {
+        //  List<BufferedOperation> bufferedWaitList;
+        //  BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation,
+        //                      int transactionID, int previousWaitingTransactionID,
+        //                      int variableID, TypeOfTransaction typeOfTransaction,
+        //                      TypeOfOperation typeOfOperation, int value, int bufferedTime) {
+
+        List<BufferedOperation> found = new ArrayList<>();
+        for (BufferedOperation BO : bufferedWaitList) {
+            if (BO.getVariableID() == abortTransactionID
+                    || BO.getPreviousWaitingTransactionID() == abortTransactionID) {
+                found.add(BO);
+            }
+        }
+        bufferedWaitList.removeAll(found);
+    }
+
+
+
+
+
+
+    private boolean hasAborted(int tid) {
+        return abortedTransactions.contains(tid);
+    }
+
+    private void endTransaction(int transactionID) {
+
+        System.out.println("[Report] Now analyzing whether Transaction T" + transactionID + " can commit or not.");
+
+        if (!this.currentTransactions.containsKey(transactionID)) {
+            System.out.println("No such transaction T" + transactionID + " to end!");
+            return;
+        }
+
+        if (hasAborted(transactionID)) {
+            System.out.println("[Aborted] This transaction T" + transactionID + " has been aborted!");
+            return;
+        }
+
+        Transaction transactionToBeEnded = this.currentTransactions.get(transactionID);
+
+        if (transactionToBeEnded.getTransactionType() == TypeOfTransaction.Read_Only) {
+            System.out.println("Read-only transaction T" + transactionID + " has been ended.");
+            // TODO
+            return;
+        }
+
+        //transaction to be ended is a read_write one
+        // TODO
+        if (bufferedWaitList != null && ifExistsBufferedOperation(transactionID)) {
+            System.out.println("[Blocked] This transaction T" + transactionID + " has been blocked!");
+            return;
+        }
+
+
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            Site tempSite = this.sites.get(i);
+            List<LockOnVariable> table = tempSite.getLockTableOfSite().lockTable;
+            List<Integer> indexList= new ArrayList<>();
+            for (int j = 0; j < table.size(); j++) {
+                LockOnVariable lock = table.get(j);
+                String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
+                System.out.println("At site " + tempSite.getSiteID()
+                        + ", Transaction T" + lock.getTransactionID()
+                        + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
+                if (lock.getTransactionID() != transactionID) {
+                    continue;
+                }
+
+                if (lock.getLockType() == TypeOfLock.Read) {
+                    //tempSite.ReleaseThatLock(lock);
+                    indexList.add(j);
+                    continue;
+                }
+
+                if (lock.getLockType() == TypeOfLock.Write) {
+                    System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
+                            + " held by Transaction T" + lock.getTransactionID() + "." );
+                    tempSite.CommitTheWrite(lock, time);
+                    indexList.add(j);
+                    //tempSite.ReleaseThatLock(lock);
+                }
+            }
+
+            Collections.sort(indexList);
+
+            for (int k = indexList.size() - 1; k >= 0; k--) {
+                tempSite.ReleaseThatLock(table.get(k));
+            }
+
+        }
+
+        addToCommittedTransaction(transactionID);
+        removeFromCurrentTransaction(transactionID);
+        removeFromAllRelatedSiteTransaction(transactionID);
+
+        System.out.println("[Committed] This transaction T" + transactionID + " has been committed!");
+
+    }
+
+    private void addToCommittedTransaction(int transactionID) {
+        committedTransactions.add(transactionID);
+    }
+
+
+    private boolean ifExistsBufferedOperation(int transactionID) {
+
+        if (bufferedWaitList == null) {
+            return false;
+        }
+
+        for (BufferedOperation BO : bufferedWaitList) {
+            if (BO.getTransactionID() == transactionID) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private void failSite(int siteID) {
+        if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == true) {
+            sites.get(siteID).failThisSite();
+            List<Integer> affectedTransactionList = outputAffectedTransactionList(siteID);
+            for (Integer number : affectedTransactionList) {
+                toBeAbortedList.add(number);
+            }
+            // clear Site History Record
+            SiteTransactionHistory.remove(siteID);
+            SiteTransactionHistory.put(siteID, new ArrayList<>());
+        } else {
+            System.out.println("[Failure] Fail to fail this site. Maybe it is still down or not even exists!");
+        }
+    }
+
+    private List<Integer> outputAffectedTransactionList(int siteID) {
+        List<Operation> tempList = SiteTransactionHistory.get(siteID);
+        List<Integer> resultList = new ArrayList<>();
+        Set<Integer> set = new HashSet<>();
+        // Operation(int transactionID, TypeOfOperation operationType,
+        //              int siteID, int variableID, int value, int time)
+        for (Operation o : tempList) {
+            int tID = o.getTransactionID();
+            if (!set.contains(tID)) {
+                set.add(tID);
+                resultList.add(tID);
+            }
+        }
+        return resultList;
+    }
+
+    private void recoverSite(int siteID) {
+        if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == false) {
+            sites.get(siteID).recoverThisSite();
+        } else {
+            System.out.println("[Failure] Fail to recover this site. Maybe it is still working or not even exists!");
+        }
+    }
+
+
+
+
+
 
 
     private ConflictingBufferedQueryReturn findExistingAnyConflictingLockOnAllUpSites(int transactionID, int variableID) {
