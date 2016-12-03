@@ -114,6 +114,50 @@ public class TransactionManager {
         }
     }
 
+    private void abort(int abortTransactionID) {
+//        private Map<Integer, Transaction> currentTransactions;
+//        private Set<Integer> abortedTransactions;
+//        public List<BufferedOperation> bufferedWaitList;
+//        private List<WaitFor> waitForList;
+        clearAllRelatedBufferedWaitList(abortTransactionID);
+        clearAllRelatedWaitForList(abortTransactionID);
+        cancelOffTotal(abortTransactionID);
+        addToAbortedTransaction(abortTransactionID);
+        removeFromCurrentTransaction(abortTransactionID);
+        removeFromAllRelatedSiteTransaction(abortTransactionID);
+    }
+
+    private void clearAllRelatedWaitForList(int abortTransactionID) {
+        //  List<WaitFor> waitForList;
+        //  WaitFor(int from, int to, int time)
+
+        List<WaitFor> found = new ArrayList<>();
+        for (WaitFor WF : waitForList) {
+            if (WF.getFrom() == abortTransactionID
+                    || WF.getTo() == abortTransactionID) {
+                found.add(WF);
+            }
+        }
+        waitForList.removeAll(found);
+    }
+
+    private void clearAllRelatedBufferedWaitList(int abortTransactionID) {
+        //  List<BufferedOperation> bufferedWaitList;
+        //  BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation,
+        //                      int transactionID, int previousWaitingTransactionID,
+        //                      int variableID, TypeOfTransaction typeOfTransaction,
+        //                      TypeOfOperation typeOfOperation, int value, int bufferedTime) {
+
+        List<BufferedOperation> found = new ArrayList<>();
+        for (BufferedOperation BO : bufferedWaitList) {
+            if (BO.getVariableID() == abortTransactionID
+                    || BO.getPreviousWaitingTransactionID() == abortTransactionID) {
+                found.add(BO);
+            }
+        }
+        bufferedWaitList.removeAll(found);
+    }
+
     private void processThisBufferedOperation(BufferedOperation bo) {
         // BufferedOperation(TypeOfBufferedOperation typeOfBufferedOperation, int transactionID,
         //                      int previousWaitingTransactionID, int variableID,
@@ -248,6 +292,9 @@ public class TransactionManager {
             for (Integer number : affectedTransactionList) {
                 toBeAbortedList.add(number);
             }
+            // clear Site History Record
+            SiteTransactionHistory.remove(siteID);
+            SiteTransactionHistory.put(siteID, new ArrayList<>());
         } else {
             System.out.println("[Failure] Fail to fail this site. Maybe it is still down or not even exists!");
         }
