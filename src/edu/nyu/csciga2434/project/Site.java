@@ -173,12 +173,12 @@ public class Site {
     public void failThisSite() {
         System.out.println("This site " + this.getSiteID() + " is down");
         this.ifSiteWorking = false;
-        // erase the lock table
 
-        //System.out.println("Deleting all entries from lock table of site " + this.getSiteID());
-        //System.out.println("Size of locktable is " + this.lockTableOfSite.lockTable.size());
-        this.lockTableOfSite.lockTable = new ArrayList<>();
-        //System.out.println("Size of locktable becomes " + this.lockTableOfSite.lockTable.size());
+        // erase the lock table
+        System.out.println("Size of lock table is " + this.lockTableOfSite.lockTable.size());
+        System.out.println("Deleting all entries from lock table of site " + this.getSiteID());
+        this.lockTableOfSite = new LockTable();
+        System.out.println("Size of lock table becomes " + this.lockTableOfSite.lockTable.size());
     }
 
     public void recoverThisSite() {

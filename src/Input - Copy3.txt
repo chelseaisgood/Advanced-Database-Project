@@ -5,7 +5,4 @@ R(T2, x1)
 W(T1, x1, 12)
 end(T2); R(T3, x1)
 end(T1);
-end(T3);
-begin(T4)
-R(T4, x1)
-fail(2)
+end(T3)

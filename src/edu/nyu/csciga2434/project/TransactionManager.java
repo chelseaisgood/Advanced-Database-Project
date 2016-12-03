@@ -28,18 +28,23 @@ public class TransactionManager {
     private Set<Integer> abortedTransactions;
     public List<BufferedOperation> bufferedWaitList;
     private List<WaitFor> waitForList;
+    private Set<Integer> toBeAbortedList;
+    private Map<Integer, List<Operation>> SiteTransactionHistory;
 
     public TransactionManager() {
         this.sites = new HashMap<>();
         this.time = 0;
+        SiteTransactionHistory = new HashMap<>();
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             sites.put(i, new Site(i));
+            SiteTransactionHistory.put(i, new ArrayList<>());
         }
         abortedTransactions = new HashSet<>();
         committedTransactions = new HashSet<>();
         currentTransactions = new HashMap<>();
         bufferedWaitList = new ArrayList<>();
         waitForList = new ArrayList<>();
+        toBeAbortedList = new HashSet<>();
     }
 
     public void readCommand(String commandLine) {
@@ -52,17 +57,17 @@ public class TransactionManager {
         this.time++;
         System.out.println("");
         System.out.println("[New Round] Time " + time);
-        List<BufferedOperation> oldbufferedWaitList = bufferedWaitList;
+        List<BufferedOperation> oldBufferedWaitList = bufferedWaitList;
         bufferedWaitList = new ArrayList<>();
         waitForList = new ArrayList<>();
 
-        if (oldbufferedWaitList.size() != 0) {
-            System.out.println("[Report] The size of the buffered wait list is " + oldbufferedWaitList.size() + " at time " + time +".");
+        if (oldBufferedWaitList.size() != 0) {
+            System.out.println("[Report] The size of the buffered wait list is " + oldBufferedWaitList.size() + " at time " + time +".");
             // TODO processing buffered operations before reading in the next line
 
-            Collections.sort(oldbufferedWaitList, new BufferedOperationComparator());
+            Collections.sort(oldBufferedWaitList, new BufferedOperationComparator());
 
-            for (BufferedOperation BO: oldbufferedWaitList) {
+            for (BufferedOperation BO: oldBufferedWaitList) {
                 processThisBufferedOperation(BO);
             }
             System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +".");
@@ -100,6 +105,10 @@ public class TransactionManager {
                 recoverSite(Integer.parseInt(op.substring(8, op.length() - 1)));
             }
         }
+
+        printSiteTransactionHistory();
+        printToBeAbortedList();
+
         for (int i = 0; i < endTransactionList.size(); i++) {
             endTransaction(endTransactionList.get(i));
         }
@@ -212,6 +221,11 @@ public class TransactionManager {
 
     }
 
+    private void abortTransaction(int transactionID) {
+        // TODO for transaction abort
+        return;
+    }
+
     private boolean ifExistsBufferedOperation(int transactionID) {
 
         if (bufferedWaitList == null) {
@@ -230,9 +244,29 @@ public class TransactionManager {
     private void failSite(int siteID) {
         if (this.sites.containsKey(siteID) && sites.get(siteID).getIfSiteWorking() == true) {
             sites.get(siteID).failThisSite();
+            List<Integer> affectedTransactionList = outputAffectedTransactionList(siteID);
+            for (Integer number : affectedTransactionList) {
+                toBeAbortedList.add(number);
+            }
         } else {
             System.out.println("[Failure] Fail to fail this site. Maybe it is still down or not even exists!");
         }
+    }
+
+    private List<Integer> outputAffectedTransactionList(int siteID) {
+        List<Operation> tempList = SiteTransactionHistory.get(siteID);
+        List<Integer> resultList = new ArrayList<>();
+        Set<Integer> set = new HashSet<>();
+        // Operation(int transactionID, TypeOfOperation operationType,
+        //              int siteID, int variableID, int value, int time)
+        for (Operation o : tempList) {
+            int tID = o.getTransactionID();
+            if (!set.contains(tID)) {
+                set.add(tID);
+                resultList.add(tID);
+            }
+        }
+        return resultList;
     }
 
     private void recoverSite(int siteID) {
@@ -284,6 +318,7 @@ public class TransactionManager {
                             System.out.println("[Success] The snapshot value of variable x" + variableID + " is " + readValue + ".");
                             Operation op = new Operation(variableID, TypeOfOperation.OP_READ, i, variableID, readValue, opTime);
                             // TODO
+                            SiteTransactionHistory.get(i).add(op);
                             transaction.addToOperationHistory(op);
                             return;
                             // put successful operation into operationHistory record stored inside every transaction
@@ -364,6 +399,7 @@ public class TransactionManager {
                 System.out.println("[Success] The value of variable x" + variableID + " read is " + readValue + ".");
                 // do not need to give read lock since write lock is already there
                 Operation op = new Operation(variableID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                SiteTransactionHistory.get(siteID).add(op);
                 transaction.addToOperationHistory(op);
                 return;
             }
@@ -382,6 +418,7 @@ public class TransactionManager {
 
                 // Operation(int transactionID, TypeOfOperation operationType, int siteID, int variableID, int value, int time)
                 Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                SiteTransactionHistory.get(siteID).add(op);
                 transaction.addToOperationHistory(op);
                 System.out.println("[Success] The value of variable x" + variableID + " read is " + readValue + ".");
                 return;
@@ -399,6 +436,12 @@ public class TransactionManager {
             System.out.println("[Failure] R(T" + transactionID + ", x" + variableID + ") has to wait because it cannot acquire the read lock on that variable blocked by Transaction T" + blockedTransactionID +".");
             return;
         }
+    }
+
+    private void putIntoTMHistoryList(Operation op) {
+        // Operation(int transactionID, TypeOfOperation operationType,
+        //          int siteID, int variableID, int value, int time)
+
     }
 
     private ConflictingBufferedQueryReturn findExistingAnyConflictingLockOnAllUpSites(int transactionID, int variableID) {
@@ -604,9 +647,10 @@ public class TransactionManager {
 
         if (ifAllHaveAWriteLock) {
             //This transaction has all the write locks that it needs, which means it can write now.
-            this.writeToAllUpSites(transactionID, variableID, value);
-            int siteNumber = 0; //don't care
-            Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteNumber, variableID, value, opTime);
+            this.writeToAllUpSites(transactionID, variableID, value, opTime);
+            int siteID = 0; //don't care
+            Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+            SiteTransactionHistory.get(siteID).add(op);
             transaction.addToOperationHistory(op);
             System.out.println("[Success] Variable x" + variableID
                     + " on all up sites has their temp uncommitted value to be " + value
@@ -617,9 +661,10 @@ public class TransactionManager {
             System.out.println("T" + transactionID + " & " + "x" + variableID);
             if (!findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
-                this.writeToAllUpSites(transactionID, variableID, value);
-                int siteNumber = 0; //don't care
-                Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteNumber, variableID, value, opTime);
+                this.writeToAllUpSites(transactionID, variableID, value, opTime);
+                int siteID = 0; //don't care
+                Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+                // SiteTransactionHistory.get(siteID).add(op);
                 transaction.addToOperationHistory(op);
                 System.out.println("[Success] Variable x" + variableID
                         + " on all up sites has their temp uncommitted value to be " + value
@@ -688,11 +733,13 @@ public class TransactionManager {
         return false;
     }
 
-    private void writeToAllUpSites(int transactionID, int variableID, int value) {
+    private void writeToAllUpSites(int transactionID, int variableID, int value, int opTime) {
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             if (this.sites.get(i).getIfSiteWorking() && this.sites.get(i).ifContainsVariable(variableID)
                     && this.sites.get(i).getLockTableOfSite().ifThisTransactionHasWriteLockInThisLockTable(transactionID)) {
                 this.sites.get(i).writeToVariableCurrValueInThisSite(variableID, value);
+                Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, i, variableID, value, opTime);
+                SiteTransactionHistory.get(i).add(op);
             }
         }
     }
@@ -748,7 +795,7 @@ public class TransactionManager {
      * 3. if exists cycle {
      * 4.   find one path
      * 5.   find one to abort
-     * 6.   export that one to abortlist
+     * 6.   export that one to abortList
      * 7.   revise the matrix
      * 8. }
      */
@@ -921,7 +968,24 @@ public class TransactionManager {
         }
     }
 
+    private void printSiteTransactionHistory() {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            List<Operation> list = SiteTransactionHistory.get(i);
+            System.out.println("Now printing the opeartion history of Site " + i + ":");
+            for (Operation o : list) {
+                System.out.println("Transaction T" + o.getTransactionID() + " " + o.getOperationType()
+                        + " on variable x" + o.getVariableID() + " with value " + o.getValue()
+                        + " at time " + o.getTime() + ".");
+            }
+        }
+    }
 
+    private void printToBeAbortedList() {
+        System.out.println("Now printing the ToBEAbortedList:");
+        for (Integer number : toBeAbortedList) {
+            System.out.println("Transaction T" + number + " should be aborted.");
+        }
+    }
 
     //keep this part for backup
 /*
@@ -957,7 +1021,6 @@ public class TransactionManager {
                             if (var.getID() == variableID && var.isAvailableForReading()) {
                                 //variable we are looking for found in this site and it is available for reading(in term of recovery)
                                 if (tempSite.getLockTableOfSite().ifCanHaveReadLockOnVariable(variableID, transactionID)) {
-                                    //TODO
                                     if (tempSite.getLockTableOfSite().ifTransactionHasLockOnVariableInThisTable(variableID, transactionID, TypeOfLock.Write)) {
                                         //if this transaction has already has a write lock on this variable at this site
                                         alreadyRead = true;
@@ -994,7 +1057,6 @@ public class TransactionManager {
 
                 if (!alreadyRead) {
                     // The value of this variable could not be read from any up site. So this operation has to wait.
-                    // TODO
                     insertToWaitList(new Operation(0, variableID, time, TypeOfOperation.OP_READ), transactionID);
                     System.out.println("[Failure] Your required variable x" + variableID + " is not available at this time. Please wait!");
                 }
