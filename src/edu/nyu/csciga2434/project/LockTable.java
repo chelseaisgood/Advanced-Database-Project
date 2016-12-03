@@ -11,30 +11,30 @@ import java.util.*;
 
 public class LockTable {
 
-    public List<LockOnVariable> lockTable;
+    // TODO
+    private List<LockOnVariable> lockTable;
 
     public LockTable(){
         lockTable = new ArrayList<>();
     }
 
+    public List<LockOnVariable> getLockTable() {
+        return this.lockTable;
+    }
 
+    /**
+     * Judge if transaction has this type of lock on this variable by checking the lock table
+     * @param variableID
+     * @param transactionID
+     * @param type
+     * @return
+     */
     public boolean ifTransactionHasLockOnVariableInThisTable(int variableID, int transactionID, TypeOfLock type) {
-        //TODO
-        if (type == TypeOfLock.Read) {
-            for (LockOnVariable lockTemp : lockTable) {
-                if (lockTemp.getVariableID() == variableID
-                        && lockTemp.getTransactionID() == transactionID
-                        && lockTemp.getLockType() == TypeOfLock.Read ) {
-                    return true;
-                }
-            }
-        } else if (type == TypeOfLock.Write) {
-            for (LockOnVariable lockTemp : lockTable) {
-                if (lockTemp.getVariableID() == variableID
-                        && lockTemp.getTransactionID() == transactionID
-                        && lockTemp.getLockType() == type) {
-                    return true;
-                }
+        for (LockOnVariable lockTemp : this.lockTable) {
+            if (lockTemp.getVariableID() == variableID
+                    && lockTemp.getTransactionID() == transactionID
+                    && lockTemp.getLockType() == type) {
+                return true;
             }
         }
         return false;
@@ -63,7 +63,7 @@ public class LockTable {
 
     public List<LockOnVariable> getAllLocksOnVariable(int variableID) {
         List<LockOnVariable> result = new ArrayList<>();
-        for (LockOnVariable lock : lockTable) {
+        for (LockOnVariable lock : this.lockTable) {
             if (lock.getVariableID() == variableID) {
                 result.add(lock);
             }
