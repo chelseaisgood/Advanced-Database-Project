@@ -115,6 +115,9 @@ public class Site {
         }
     }
 
+    /**
+     *  return true if this site contains the required variable
+     */
     public boolean ifHaveThisVariable(int variableID) {
         for(Variable var : this.variableList) {
             if (var.getID() == variableID) {
