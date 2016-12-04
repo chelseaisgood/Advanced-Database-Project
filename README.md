@@ -7,5 +7,5 @@
 4. [Done] create a method of reporting whether this transaction can commit;
 5. [Done] create a method of reporting the commited transaction outcomes;
 6. [Done] abort all affected transactions when a site fails;
-7. check if deadlock detection works well;
-8. testing;
+7. [Done] check if deadlock detection works well;
+8. Run as many test cases as possble;
