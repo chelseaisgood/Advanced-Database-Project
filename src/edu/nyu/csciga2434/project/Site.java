@@ -161,23 +161,23 @@ public class Site {
         }
     }
 
-    public void ReverseTheWrite(LockOnVariable lock) {
-        if ( !ifHaveThisVariable(lock.getVariableID())) {
-            System.out.println("[Failure] Cannot find this variable x" + lock.getVariableID() + " in this site " + id + ".");
-            return;
-        }
-        int tempVariableID = lock.getVariableID();
-        System.out.println("Now this variable to be updated is x" + tempVariableID);
-        for (Variable var : variableList) {
-            if (var.getID() == tempVariableID) {
-                int valueNew = var.getCurrValue();
-                System.out.println("Now this current value is " + valueNew);
-                var.setValue(valueNew);
-                System.out.println("Now this value is " + var.getValue());
-                return;
-            }
-        }
-    }
+//    public void ReverseTheWrite(LockOnVariable lock) {
+//        if ( !ifHaveThisVariable(lock.getVariableID())) {
+//            System.out.println("[Failure] Cannot find this variable x" + lock.getVariableID() + " in this site " + id + ".");
+//            return;
+//        }
+//        int tempVariableID = lock.getVariableID();
+//        System.out.println("Now this variable to be updated is x" + tempVariableID);
+//        for (Variable var : variableList) {
+//            if (var.getID() == tempVariableID) {
+//                int valueNew = var.getCurrValue();
+//                System.out.println("Now this current value is " + valueNew);
+//                var.setValue(valueNew);
+//                System.out.println("Now this value is " + var.getValue());
+//                return;
+//            }
+//        }
+//    }
 
     public void failThisSite() {
         this.ifSiteWorking = false;
