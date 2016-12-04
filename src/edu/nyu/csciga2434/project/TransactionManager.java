@@ -1280,7 +1280,6 @@ public class TransactionManager {
             mat[i][clearID] = 0;
             mat[clearID][i] = 0;
         }
-        return;
     }
 
 

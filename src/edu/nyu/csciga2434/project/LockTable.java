@@ -11,7 +11,6 @@ import java.util.*;
 
 public class LockTable {
 
-    // TODO
     private List<LockOnVariable> lockTable;
 
     public LockTable(){
@@ -24,10 +23,6 @@ public class LockTable {
 
     /**
      * Judge if transaction has this type of lock on this variable by checking the lock table
-     * @param variableID
-     * @param transactionID
-     * @param type
-     * @return
      */
     public boolean ifTransactionHasLockOnVariableInThisTable(int variableID, int transactionID, TypeOfLock type) {
         for (LockOnVariable lockTemp : this.lockTable) {
@@ -40,26 +35,26 @@ public class LockTable {
         return false;
     }
 
-    public boolean ifCanHaveReadLockOnVariable(int variableID, int transactionID) {
-        List<LockOnVariable> locks = getAllLocksOnVariable(variableID);
-        if (locks.size() == 0) {
-            return true;
-        }
-        boolean hasWriteLock = false;
-        for (LockOnVariable lockTemp : locks) {
-            if (lockTemp.getLockType() == TypeOfLock.Write && lockTemp.getTransactionID() != transactionID) {
-                //Other transaction has a write lock on that variable,
-                // which means that this transaction could not require read lock on that variable.
-                hasWriteLock = true;
-            }
-        }
-
-        if (hasWriteLock) {
-            return false;
-        } else {
-            return true;
-        }
-    }
+//    public boolean ifCanHaveReadLockOnVariable(int variableID, int transactionID) {
+//        List<LockOnVariable> locks = getAllLocksOnVariable(variableID);
+//        if (locks.size() == 0) {
+//            return true;
+//        }
+//        boolean hasWriteLock = false;
+//        for (LockOnVariable lockTemp : locks) {
+//            if (lockTemp.getLockType() == TypeOfLock.Write && lockTemp.getTransactionID() != transactionID) {
+//                //Other transaction has a write lock on that variable,
+//                // which means that this transaction could not require read lock on that variable.
+//                hasWriteLock = true;
+//            }
+//        }
+//
+//        if (hasWriteLock) {
+//            return false;
+//        } else {
+//            return true;
+//        }
+//    }
 
     public List<LockOnVariable> getAllLocksOnVariable(int variableID) {
         List<LockOnVariable> result = new ArrayList<>();
@@ -108,6 +103,5 @@ public class LockTable {
         if (index >= 0) {
             lockTable.remove(index);
         }
-        return;
     }
 }
