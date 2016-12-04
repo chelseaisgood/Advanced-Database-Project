@@ -812,7 +812,7 @@ public class TransactionManager {
      *  Add this transaction ID to committed transaction list
      */
     private void addToCommittedTransaction(int transactionID) {
-        committedTransactions.add(transactionID);
+        this.committedTransactions.add(transactionID);
     }
 
 
@@ -940,8 +940,7 @@ public class TransactionManager {
         //                      TypeOfOperation typeOfOperation, int value, int bufferedTime)
         List<BufferedOperation> found = new ArrayList<>();
         for (BufferedOperation BO : this.bufferedWaitList) {
-            if (BO.getVariableID() == abortTransactionID
-                    || BO.getPreviousWaitingTransactionID() == abortTransactionID) {
+            if (BO.getTransactionID() == abortTransactionID) {
                 found.add(BO);
             }
         }
