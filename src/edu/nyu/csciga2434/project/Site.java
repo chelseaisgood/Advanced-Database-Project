@@ -37,6 +37,10 @@ public class Site {
         return this.lockTableOfSite;
     }
 
+    public List<Variable> getVariableList() {
+        return this.variableList;
+    }
+
     public Site(int id){
         this.id = id;
         this.variableList = new ArrayList<>();
@@ -67,21 +71,7 @@ public class Site {
         return dumpOutput.toString();
     }
 
-    public List<Variable> getVariableList() {
-        return this.variableList;
-    }
 
-
-    public Variable getVariableAndID(int variableID) {
-        ArrayList<Variable> list;
-        list = (ArrayList<Variable>) this.variableList;
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).getID() == variableID) {
-                return list.get(i);
-            }
-        }
-        return null;
-    }
 
 
     public boolean ifContainsVariable(int variableID) {
@@ -150,8 +140,7 @@ public class Site {
 
 
     public void ReleaseThatLock(LockOnVariable lock) {
-        lockTableOfSite.delectThisLock(lock);
-        return;
+        lockTableOfSite.deleteThisLock(lock);
     }
 
     public void CommitTheWrite(LockOnVariable lock, int commitTime) {
@@ -170,7 +159,6 @@ public class Site {
                 return;
             }
         }
-        return;
     }
 
     public void ReverseTheWrite(LockOnVariable lock) {
@@ -189,22 +177,20 @@ public class Site {
                 return;
             }
         }
-        return;
     }
 
     public void failThisSite() {
-        System.out.println("This site " + this.getSiteID() + " is down");
         this.ifSiteWorking = false;
 
         // erase the lock table
-        System.out.println("Size of lock table is " + this.lockTableOfSite.lockTable.size());
-        System.out.println("Deleting all entries from lock table of site " + this.getSiteID());
+        System.out.println("Original size of lock table is " + this.lockTableOfSite.getLockTable().size());
+        System.out.println("Deleting all entries from lock table of Site " + this.getSiteID());
         this.lockTableOfSite = new LockTable();
-        System.out.println("Size of lock table becomes " + this.lockTableOfSite.lockTable.size());
+        System.out.println("Now size of lock table becomes " + this.lockTableOfSite.getLockTable().size());
     }
 
     public void recoverThisSite() {
-        System.out.println("This site " + this.getSiteID() + " is recovered.");
+        System.out.println("[Recover] This site " + this.getSiteID() + " is recovered.");
         this.ifSiteWorking = true;
         //Setting only non-replicated variables as available to read
         //Replicated variables should not be available to read

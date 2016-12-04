@@ -91,7 +91,7 @@ public class LockTable {
         lock.setLockType(TypeOfLock.Write);
     }
 
-    public void delectThisLock(LockOnVariable lock) {
+    public void deleteThisLock(LockOnVariable lock) {
         int index = Integer.MIN_VALUE;
         for (int i = 0; i < lockTable.size(); i++) {
             LockOnVariable thisLock = lockTable.get(i);

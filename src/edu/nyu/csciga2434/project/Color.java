@@ -7,6 +7,5 @@ package edu.nyu.csciga2434.project;
  */
 public enum Color {
     white,
-    gray,
     black
 }

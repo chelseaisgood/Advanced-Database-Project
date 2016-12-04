@@ -9,3 +9,4 @@ end(T3);
 begin(T4)
 R(T4, x1)
 fail(2)
+recover(2)
