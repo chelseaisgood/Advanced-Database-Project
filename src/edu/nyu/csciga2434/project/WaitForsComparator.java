@@ -9,6 +9,7 @@ import java.util.Comparator;
  */
 
 public class WaitForsComparator implements Comparator<WaitFor> {
+    @Override
     public int compare(WaitFor w1, WaitFor w2) {
         return w1.getFrom() - w2.getFrom();
     }

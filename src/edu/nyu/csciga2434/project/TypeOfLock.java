@@ -8,7 +8,6 @@ package edu.nyu.csciga2434.project;
  */
 
 public enum TypeOfLock{
-    None,
     Read,
     Write
 }

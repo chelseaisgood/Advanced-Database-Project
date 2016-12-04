@@ -7,6 +7,5 @@ package edu.nyu.csciga2434.project;
  */
 public enum TypeOfOperation {
     OP_READ,
-    OP_WRITE,
-    OP_COMMIT
+    OP_WRITE
 }

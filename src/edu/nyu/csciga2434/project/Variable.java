@@ -38,11 +38,7 @@ public class Variable {
         this.availableForReading = true;
         this.variableHistoryList = new ArrayList<>();
         variableHistoryList.add(new VariableHistory(this.value, 0));
-        if(id%2==0){
-            this.hasCopy = true;
-        }else{
-            this.hasCopy = false;
-        }
+        this.hasCopy = id % 2 == 0;
         setCurrValue(this.value);
     }
 

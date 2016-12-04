@@ -8,8 +8,8 @@ package edu.nyu.csciga2434.project;
  */
 public class VariableHistory {
 
-    private int value;
-    private int time;
+    private final int value;
+    private final int time;
 
 
     public VariableHistory(int value, int time) {
@@ -21,16 +21,8 @@ public class VariableHistory {
         return value;
     }
 
-    public void setValue(int value) {
-        this.value = value;
-    }
-
     public int getTime() {
         return time;
-    }
-
-    public void setTime(int time) {
-        this.time = time;
     }
 
 }
