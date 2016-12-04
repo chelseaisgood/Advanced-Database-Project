@@ -26,35 +26,38 @@ public class TransactionManager {
     private int time;
     private Set<Integer> committedTransactions;
     private Set<Integer> abortedTransactions;
-    public List<BufferedOperation> bufferedWaitList;
+    private List<BufferedOperation> bufferedWaitList;
     private List<WaitFor> waitForList;
     private Set<Integer> toBeAbortedList;
     private Map<Integer, List<Operation>> SiteTransactionHistory;
 
+    public List<BufferedOperation> getBufferedWaitList() {
+        return this.bufferedWaitList;
+    }
+
     public TransactionManager() {
         this.sites = new HashMap<>();
         this.time = 0;
-        SiteTransactionHistory = new HashMap<>();
+        this.SiteTransactionHistory = new HashMap<>();
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             sites.put(i, new Site(i));
-            SiteTransactionHistory.put(i, new ArrayList<>());
+            this.SiteTransactionHistory.put(i, new ArrayList<>());
         }
-        abortedTransactions = new HashSet<>();
-        committedTransactions = new HashSet<>();
-        currentTransactions = new HashMap<>();
-        bufferedWaitList = new ArrayList<>();
-        waitForList = new ArrayList<>();
-        toBeAbortedList = new HashSet<>();
+        this.abortedTransactions = new HashSet<>();
+        this.committedTransactions = new HashSet<>();
+        this.currentTransactions = new HashMap<>();
+        this.bufferedWaitList = new ArrayList<>();
+        this.waitForList = new ArrayList<>();
+        this.toBeAbortedList = new HashSet<>();
     }
 
-    public void readCommand(String commandLine) {
 
+    public void readCommand(String commandLine) {
         /**
          *  1. process those buffered operations
          *  2. process commands in this line
          *  3. check deadlock
          */
-
         this.time++;    // next tick
         System.out.println("\n" + "[New Round] Time " + time);
 
@@ -73,7 +76,7 @@ public class TransactionManager {
             System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +" after processing all buffered operations.");
         }
 
-
+        // process new read in command line
         String[] operations = commandLine.split(";");
         ArrayList<Integer> endTransactionList = new ArrayList<>();
         for (String opRaw : operations) {
@@ -109,18 +112,14 @@ public class TransactionManager {
         printSiteTransactionHistory();
         printToBeAbortedList();
 
-        // TODO
-        toBeAbortedList.forEach(this::abort);
-
+        this.toBeAbortedList.forEach(this::abort);
         // reset to be aborted list before deadlock checking
         this.toBeAbortedList = new HashSet<>();
 
-        // TODO
-        // checkDeadLock();
+        endTransactionList.forEach(this::endTransaction);
 
-        for (int i = 0; i < endTransactionList.size(); i++) {
-            endTransaction(endTransactionList.get(i));
-        }
+        List<Integer> deadLockAbortTransactionIDList = deadLockRemoval(waitForList);
+        deadLockAbortTransactionIDList.forEach(this::abort);
     }
 
 
@@ -1070,10 +1069,11 @@ public class TransactionManager {
      * 8. }
      */
 
-    private static List<Integer> deadLockRemoval(List<WaitFor> waitForList) {
+    private List<Integer> deadLockRemoval(List<WaitFor> waitForList) {
         Set<Integer> set = new HashSet<>();
         List<Integer> list = new ArrayList<>();
 
+        // find all the transaction IDs included in any wait-for relation list
         for (WaitFor waitFor : waitForList) {
             int from  = waitFor.getFrom();
             int to  = waitFor.getTo();
@@ -1087,25 +1087,28 @@ public class TransactionManager {
             }
         }
 
+        // sort by transaction ID
         Collections.sort(list);
 
         int sizeOfMat = list.size();
         int sizeOfWaitForList = waitForList.size();
-        System.out.println("Size of this list is " + sizeOfMat + ".");
+        printWaitForList();
+        System.out.println("[Report] Before deadlock checking, the size of this wait-for relation list is " + sizeOfWaitForList + ".");
+
+        // create adjacency matrix for deadlock detection
         int[][] mat = new int[sizeOfMat][sizeOfMat];
 
+        // create index for all transaction ID starting from number 0
         Map<Integer, Integer> map = new HashMap<>();
         for (int i = 0; i < sizeOfMat; i++) {
             map.put(list.get(i), i);
         }
 
-        for (int i = 0; i < sizeOfWaitForList; i++) {
-            WaitFor waitFor = waitForList.get(i);
-            int from  = waitFor.getFrom();
-            int to  = waitFor.getTo();
-            //System.out.println("From " + from + " to " + to + ".");
-            //System.out.println("From " + map.get(from) + " to " + map.get(to) + ".");
-            mat [map.get(from)][map.get(to)] = 1;
+        // fill in  1s
+        for (WaitFor WF : waitForList) {
+            int from = WF.getFrom();
+            int to = WF.getTo();
+            mat[map.get(from)][map.get(to)] = 1;
         }
 
         printMatrix(mat);
@@ -1113,76 +1116,86 @@ public class TransactionManager {
         List<Integer> abortTransactionIDList = new ArrayList<>();
 
         Map<Boolean, Set<Integer>> cycleCheckResult = checkCycle(mat);
+
         while (cycleCheckResult.containsKey(true)) {
             System.out.println("A cycle is found!");
+            // gets the set which contains all the vertex index in that loop
             Set<Integer> tempHashSet = cycleCheckResult.get(true);
             Set<Integer> translatedSet = translateSet(tempHashSet, list);
 
+            // select the youngest transaction to abort
             int abortedTransactionID = -1;
             int maxTime = -1;
             for (int index : translatedSet) {
-                int translatedIndex = index;
-                int tempTime = getWaitForTime (waitForList, translatedIndex);
+                int tempTime = getWaitForTime (waitForList, index);
                 if (tempTime > maxTime) {
-                    abortedTransactionID = translatedIndex;
+                    abortedTransactionID = index;
                 }
             }
-            System.out.println("abortedTransactionID is Index #" + abortedTransactionID + "!" );
+            System.out.println("AbortedTransactionID is Index #" + abortedTransactionID + "!" );
             abortTransactionIDList.add(abortedTransactionID);
             System.out.println("Setting both row and column #" + map.get(abortedTransactionID) + " to be zero!" );
-            reviceTheMat(mat, map.get(abortedTransactionID));
+            // deleting all the 1s in the matrix concerned with the aborted transaction
+            reviseTheMat(mat, map.get(abortedTransactionID));
             printMatrix(mat);
             cycleCheckResult = checkCycle(mat);
         }
-
         printMatrix(mat);
-
         return abortTransactionIDList;
     }
 
-    private static void reviceTheMat(int[][] mat, int clearID) {
+
+    /**
+     *  Print the adjacency matrix for directed graph
+     */
+    private void printMatrix (int[][] mat) {
         int size = mat.length;
         for (int i = 0; i < size; i++) {
-            mat[i][clearID] = 0;
-            mat[clearID][i] = 0;
-        }
-        return;
-    }
-
-    private static int getWaitForTime(List<WaitFor> waitForList, int translatedIndex) {
-        for (WaitFor waitFor : waitForList) {
-            if (waitFor.getFrom() == translatedIndex) {
-                return waitFor.getTime();
+            for (int j = 0; j < size; j++) {
+                if (j == size - 1) {
+                    System.out.println(mat[i][j]);
+                    continue;
+                }
+                System.out.print(mat[i][j] + " ");
             }
         }
-        return -1;
     }
 
-    private static Set<Integer> translateSet(Set<Integer> tempHashSet, List<Integer> list) {
-        Set<Integer> result = new HashSet<>();
-        for (int index : tempHashSet) {
-            int translatedIndex = list.get(index);
-            result.add(translatedIndex);
-            System.out.println("Translated Index #" + translatedIndex + " is translated!" );
+
+    /**
+     *  Print all wait for relations
+     */
+    private void printWaitForList() {
+        for (WaitFor WF : this.waitForList) {
+            System.out.println("\n" + "[Report] Now printing the wait-for relations:");
+            System.out.println("Transaction T" + WF.getFrom() + " is waiting for Transaction T" + WF.getTo() + ".");
         }
-        System.out.println("One translation is done!");
-        return result;
     }
 
-    private static Map<Boolean, Set<Integer>> checkCycle(int[][] mat) {
+
+    /**
+     *  Check the adjacency matrix, traverse the directed wait-for graph by DFS
+     *  and return one loop(if exists)
+     */
+    private Map<Boolean, Set<Integer>> checkCycle(int[][] mat) {
         int size = mat.length;
+
+        // create a list of vertices in the directed graph
         List<Vertex> V= new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            Vertex vertex = new Vertex();
-            V.add(vertex);
+            V.add(new Vertex());
         }
 
+        // DFS traverse and find back edge
         for (int index = 0; index < size; index++) {
             Vertex tempVertex = V.get(index);
+            // If color is white of this vertex, it means that it is not visited
             if (tempVertex.getColor() == Color.white) {
+                // create a new hash set for each tree
                 System.out.println("New HashSet is created!");
                 Set<Integer> tempSet = new HashSet<>();
                 int tempIndex = index;
+                // if the set already contains this index before, then indicates a cycle is found
                 if (tempSet.contains(tempIndex)) {
                     Map<Boolean, Set<Integer>> retMap  = new HashMap<>();
                     retMap.put(true, tempSet);
@@ -1190,8 +1203,9 @@ public class TransactionManager {
                 }
                 tempSet.add(tempIndex);
                 System.out.println("Index #" + tempIndex + " is added.");
-                tempVertex.setColor(Color.black);
-                int[] tempRow = mat[tempIndex];
+                tempVertex.setColor(Color.black); // set vertex state to be visited
+                int[] tempRow = mat[tempIndex]; // check that row do the DFS traverse
+                // return the next vertex index in the vertices list
                 int nextNodeIndex = getNextIndex(tempRow);
                 while (nextNodeIndex >= 0) {
                     tempIndex = nextNodeIndex;
@@ -1211,11 +1225,16 @@ public class TransactionManager {
         }
 
         Map<Boolean, Set<Integer>> finalMap  = new HashMap<>();
+        // false indicates that there is no loop found in this directed wait-for graph
         finalMap.put(false, null);
         return finalMap;
     }
 
-    private static int getNextIndex(int[] tempRow) {
+
+    /**
+     *  Check one row of adjacency matrix, and decide what is the next vertex to visit
+     */
+    private int getNextIndex(int[] tempRow) {
         for (int i = 0; i < tempRow.length; i++) {
             if (tempRow[i] != 0) {
                 return i;
@@ -1225,19 +1244,50 @@ public class TransactionManager {
     }
 
 
-    private static void printMatrix (int[][] mat) {
-        int size = mat.length;
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (j == size - 1) {
-                    System.out.println(mat[i][j]);
-                    continue;
-                }
-                System.out.print(mat[i][j] + " ");
-            }
+    /**
+     *  Translate the matrix index back to transaction ID
+     */
+    private Set<Integer> translateSet(Set<Integer> tempHashSet, List<Integer> list) {
+        Set<Integer> result = new HashSet<>();
+        for (int index : tempHashSet) {
+            int translatedIndex = list.get(index);
+            result.add(translatedIndex);
+            System.out.println("Translated Index #" + translatedIndex + " is translated!" );
         }
+        System.out.println("One translation is done!");
+        return result;
     }
 
+
+    /**
+     *  Get buffered time for this buffered operation
+     */
+    private int getWaitForTime(List<WaitFor> waitForList, int translatedIndex) {
+        for (WaitFor waitFor : waitForList) {
+            if (waitFor.getFrom() == translatedIndex) {
+                return waitFor.getTime();
+            }
+        }
+        return -1;
+    }
+
+
+    /**
+     *  Get buffered time for this buffered operation
+     */
+    private void reviseTheMat(int[][] mat, int clearID) {
+        int size = mat.length;
+        for (int i = 0; i < size; i++) {
+            mat[i][clearID] = 0;
+            mat[clearID][i] = 0;
+        }
+        return;
+    }
+
+
+    /**
+     * print site transaction history per site
+     */
     private void printSiteTransactionHistory() {
         for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
             List<Operation> list = SiteTransactionHistory.get(i);
@@ -1250,6 +1300,10 @@ public class TransactionManager {
         }
     }
 
+
+    /**
+     * print to be aborted transaction list
+     */
     private void printToBeAbortedList() {
         System.out.println("Now printing the ToBEAbortedList:");
         for (Integer number : toBeAbortedList) {

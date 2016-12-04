@@ -26,8 +26,9 @@ public class Test {
             while (scanner.hasNext()) {
                 manager.readCommand(scanner.nextLine());
             }
-            if (manager.bufferedWaitList != null) {
-                System.out.println("Buffered WaitList Size:" + manager.bufferedWaitList.size());
+            if (manager.getBufferedWaitList() != null) {
+                System.out.println("Buffered WaitList Size:" + manager.getBufferedWaitList().size());
+                System.out.println("[EOF] The testing is ended!");
             }
         } catch (IOException e) {
             e.printStackTrace();
