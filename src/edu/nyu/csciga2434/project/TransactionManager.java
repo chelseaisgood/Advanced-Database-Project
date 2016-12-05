@@ -109,7 +109,7 @@ public class TransactionManager {
             }
         }
 
-        printSiteTransactionHistory();
+        //printSiteTransactionHistory();
         printToBeAbortedList();
 
         this.toBeAbortedList.forEach(this::abort);
@@ -120,6 +120,7 @@ public class TransactionManager {
 
         List<Integer> deadLockAbortTransactionIDList = deadLockRemoval(waitForList);
         deadLockAbortTransactionIDList.forEach(this::abort);
+        //printSiteLockTable();
     }
 
 
@@ -223,7 +224,7 @@ public class TransactionManager {
                             // get read value from the chosen record in the variable's record history
                             int readValue = variableHistory.get(maxIndex).getValue();
                             System.out.println("[Success] The snapshot value of variable x" + variableID + " is " + readValue + ".");
-                            Operation op = new Operation(variableID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                            Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
                             // put successful operation into SiteTransactionHistory record stored inside this Transaction Manager
                             insertIntoSiteTransactionHistory(siteID, op);
                             // put successful operation into operationHistory record stored inside every transaction
@@ -306,7 +307,7 @@ public class TransactionManager {
                 System.out.println("[Success] The value of variable x" + variableID
                         + " read by Transaction T" + transactionID + " from Site " + siteID + " is " + readValue + ".");
                 // do not need to require for a read lock since a write lock is already got
-                Operation op = new Operation(variableID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
                 // insert this operation into site transaction history
                 insertIntoSiteTransactionHistory(siteID, op);
                 // insert this operation into transaction history
@@ -425,7 +426,7 @@ public class TransactionManager {
                 List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
                 for (LockOnVariable lock : lockListOnThisVariable) {
                     if (lock.getVariableID() == variableID && lock.getTransactionID() != transactionID && lock.getLockType() != TypeOfLock.Read) {
-                        System.out.println("[Failure] Transaction T" + transactionID + " is blocked by Transaction T" + lock.getTransactionID() + " on Variable x" + variableID + ".");
+                        //System.out.println("[Failure] Transaction T" + transactionID + " is blocked by Transaction T" + lock.getTransactionID() + " on Variable x" + variableID + ".");
                         return true;
                     }
                 }
@@ -443,6 +444,17 @@ public class TransactionManager {
         if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID) && tempSite.ifThisVariableIsAvailable(variableID)) {
             List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
             if (lockListOnThisVariable.size() == 0) {
+                tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Read);
+                System.out.println("A read lock added in site " + siteID
+                        + " by Transaction T" + transactionID + " on variable x" + variableID + "!");
+            } else {
+                for (LockOnVariable lock : lockListOnThisVariable) {
+                    if (lock.getTransactionID() == transactionID) {
+                        System.out.println("A " + lock.getLockType() + " lock in site " + siteID
+                                + " has already got by Transaction T" + transactionID + " on variable x" + variableID + "!");
+                        return;
+                    }
+                }
                 tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Read);
                 System.out.println("A read lock added in site " + siteID
                         + " by Transaction T" + transactionID + " on variable x" + variableID + "!");
@@ -551,7 +563,7 @@ public class TransactionManager {
             // This transaction has all the write locks that it needs, which means it can write now.
             this.writeToAllUpSites(transactionID, variableID, value, opTime);
             int siteID = 0; //don't care
-            Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+            Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
             insertIntoSiteTransactionHistory(siteID, op);
             transaction.addToOperationHistory(op);
             System.out.println("[Success] Variable x" + variableID
@@ -572,7 +584,7 @@ public class TransactionManager {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
                 writeToAllUpSites(transactionID, variableID, value, opTime);
                 int siteID = 0; //don't care
-                Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+                Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
                 // insertIntoSiteTransactionHistory(siteID, op);
                 // This step is done is the writeToAllUpSites function
                 transaction.addToOperationHistory(op);
@@ -690,9 +702,15 @@ public class TransactionManager {
                     System.out.println("At Site " + siteID + ", a WRITE lock on Variable x" + variableID
                             + " is added by Transaction T" + transactionID + ".");
                 } else {
-                    tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
-                    System.out.println("At Site " + siteID + ", a READ lock on Variable x" + variableID
-                            + " is upgraded to a WRITE one by Transaction T" + transactionID + ".");
+                    LockOnVariable thisLock = lockListOnThisVariable.get(0);
+                    if (thisLock.getLockType() == TypeOfLock.Read) {
+                        tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
+                        System.out.println("At Site " + siteID + ", a READ lock on Variable x" + variableID
+                                + " is upgraded to a WRITE one by Transaction T" + transactionID + ".");
+                    } else {
+                        System.out.println("At Site " + siteID + ", a WRITE lock on Variable x" + variableID
+                                + " is already get by Transaction T" + transactionID + ".");
+                    }
                 }
             }
         }
@@ -707,7 +725,7 @@ public class TransactionManager {
             if (this.sites.get(siteID).getIfSiteWorking() && this.sites.get(siteID).ifContainsVariable(variableID)
                     && this.sites.get(siteID).getLockTableOfSite().ifThisTransactionHasWriteLockInThisLockTable(transactionID)) {
                 this.sites.get(siteID).writeToVariableCurrValueInThisSite(variableID, value);
-                Operation op = new Operation(variableID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+                Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
                 insertIntoSiteTransactionHistory(siteID, op);
             }
         }
@@ -785,13 +803,13 @@ public class TransactionManager {
 
         System.out.println("[Report] Now analyzing whether Transaction T" + transactionID + " can commit or not.");
 
-        if (!this.currentTransactions.containsKey(transactionID)) {
-            System.out.println("[Failure] No such Transaction T" + transactionID + " to end!");
+        if (hasAborted(transactionID)) {
+            System.out.println("[Aborted] This transaction T" + transactionID + " has already been aborted!");
             return;
         }
 
-        if (hasAborted(transactionID)) {
-            System.out.println("[Aborted] This transaction T" + transactionID + " has already been aborted!");
+        if (!this.currentTransactions.containsKey(transactionID)) {
+            System.out.println("[Failure] No such Transaction T" + transactionID + " to end!");
             return;
         }
 
@@ -809,20 +827,23 @@ public class TransactionManager {
                 Site tempSite = this.sites.get(siteID);
                 List<LockOnVariable> table = tempSite.getLockTableOfSite().getLockTable();
                 //indexList records the position of locks in this lock table list
-                List<Integer> indexList= new ArrayList<>();
+                List<LockOnVariable> indexList= new ArrayList<>();
                 for (int j = 0; j < table.size(); j++) {
                     LockOnVariable lock = table.get(j);
-                    String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
-                    System.out.println("At site " + tempSite.getSiteID()
-                            + ", Transaction T" + lock.getTransactionID()
-                            + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
+//                    String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
+//                    System.out.println("At site " + tempSite.getSiteID()
+//                            + ", Transaction T" + lock.getTransactionID()
+//                            + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
 
                     if (lock.getTransactionID() != transactionID) {
                         continue;
                     }
 
                     if (lock.getLockType() == TypeOfLock.Read) {
-                        indexList.add(j);
+                        System.out.println("Starting to release read lock on variable x" + lock.getVariableID()
+                                + " held by Transaction T" + lock.getTransactionID()
+                                + " at Site " + tempSite.getSiteID() + "." );
+                        indexList.add(lock);
                         continue;
                     }
 
@@ -831,20 +852,22 @@ public class TransactionManager {
                                 + " held by Transaction T" + lock.getTransactionID()
                                 + " at Site " + tempSite.getSiteID() + "." );
                         tempSite.CommitTheWrite(lock, time);
-                        indexList.add(j);
+                        indexList.add(lock);
                     }
                 }
 
-                Collections.sort(indexList);
-
-                // remove locks from this lock table
-                for (int k = indexList.size() - 1; k >= 0; k--) {
-                    tempSite.ReleaseThatLock(table.get(k));
-                }
+                table.removeAll(indexList);
+//                Collections.sort(indexList);
+//
+//                // remove locks from this lock table
+//                for (int k = indexList.size() - 1; k >= 0; k--) {
+//                    tempSite.ReleaseThatLock(table.get(k));
+//                }
 
             }
         }
-
+        // remove from wait for list
+        clearAllRelatedWaitForList(transactionID);
 
         reportTransaction(transactionID);
         // add this transaction into committed transaction list
@@ -897,7 +920,7 @@ public class TransactionManager {
             } else if (operation.getOperationType() == TypeOfOperation.OP_WRITE) {
                 System.out.println("Transaction T" + transactionID
                         + " writes value " + operation.getValue() + " to Variable x" + operation.getVariableID()
-                        + " in Site " + operation.getSiteID() + " at Time " + operation.getTime() + ".");
+                        + " in all available Sites at Time " + operation.getTime() + ".");
             }
         }
         System.out.println(" ");
@@ -1205,7 +1228,7 @@ public class TransactionManager {
             mat[map.get(from)][map.get(to)] = 1;
         }
 
-        printMatrix(mat);
+        //printMatrix(mat);
 
         List<Integer> abortTransactionIDList = new ArrayList<>();
 
@@ -1226,15 +1249,15 @@ public class TransactionManager {
                     abortedTransactionID = index;
                 }
             }
-            System.out.println("AbortedTransactionID is Index #" + abortedTransactionID + "!" );
+            //System.out.println("AbortedTransactionID is Index #" + abortedTransactionID + "!" );
             abortTransactionIDList.add(abortedTransactionID);
-            System.out.println("Setting both row and column #" + map.get(abortedTransactionID) + " to be zero!" );
+            //System.out.println("Setting both row and column #" + map.get(abortedTransactionID) + " to be zero!" );
             // deleting all the 1s in the matrix concerned with the aborted transaction
             reviseTheMat(mat, map.get(abortedTransactionID));
-            printMatrix(mat);
+            //printMatrix(mat);
             cycleCheckResult = checkCycle(mat);
         }
-        printMatrix(mat);
+        //printMatrix(mat);
         return abortTransactionIDList;
     }
 
@@ -1286,7 +1309,7 @@ public class TransactionManager {
             // If color is white of this vertex, it means that it is not visited
             if (tempVertex.getColor() == Color.white) {
                 // create a new hash set for each tree
-                System.out.println("New HashSet is created!");
+                //System.out.println("New HashSet is created!");
                 Set<Integer> tempSet = new HashSet<>();
                 int tempIndex = index;
                 // if the set already contains this index before, then indicates a cycle is found
@@ -1296,7 +1319,7 @@ public class TransactionManager {
                     return retMap;
                 }
                 tempSet.add(tempIndex);
-                System.out.println("Index #" + tempIndex + " is added.");
+                //System.out.println("Index #" + tempIndex + " is added.");
                 tempVertex.setColor(Color.black); // set vertex state to be visited
                 int[] tempRow = mat[tempIndex]; // check that row do the DFS traverse
                 // return the next vertex index in the vertices list
@@ -1309,7 +1332,7 @@ public class TransactionManager {
                         return retMap;
                     }
                     tempSet.add(tempIndex);
-                    System.out.println("Index #" + tempIndex + " is added.");
+                    //System.out.println("Index #" + tempIndex + " is added.");
                     tempVertex = V.get(tempIndex);
                     tempVertex.setColor(Color.black);
                     tempRow = mat[tempIndex];
@@ -1389,6 +1412,21 @@ public class TransactionManager {
                 System.out.println("Transaction T" + o.getTransactionID() + " " + o.getOperationType()
                         + " on variable x" + o.getVariableID() + " with value " + o.getValue()
                         + " at time " + o.getTime() + ".");
+            }
+        }
+    }
+
+
+    /**
+     * print site transaction history per site
+     */
+    private void printSiteLockTable() {
+        for (int i = 1; i <= DEFAULT_SITE_TOTAL_NUMBER; i++) {
+            List<LockOnVariable> list = this.sites.get(i).getLockTableOfSite().getLockTable();
+            System.out.println("\n" + "Now printing the lock table of Site " + i + ":");
+            for (LockOnVariable lock : list) {
+                System.out.println("Transaction T" + lock.getTransactionID() + " holds a "
+                        + lock.getLockType() + " lock on Variable x" + lock.getVariableID() + ".");
             }
         }
     }
