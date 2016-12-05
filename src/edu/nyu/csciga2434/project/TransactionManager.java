@@ -865,6 +865,26 @@ public class TransactionManager {
 //                }
 
             }
+        } else {
+            // for read-only transaction, it can commit only when all sites it reads from are up
+            // TODO
+            // TODO
+            // TODO
+            // TODO
+            // TODO
+            // TODO
+            List<Operation> history = transactionToBeEnded.getOperationHistory();
+            boolean allSiteUp = true;
+            for (Operation op : history) {
+                int siteID = op.getSiteID();
+                if(!this.sites.get(siteID).getIfSiteWorking()) {
+                    allSiteUp = false;
+                    break;
+                }
+            }
+            if (!allSiteUp) {
+                System.out.println("[Waiting] This Read-only Transaction T" + transactionID + " cannot commit at this time because there exists some sites it reads from are not recovered from failure..");
+            }
         }
         // remove from wait for list
         clearAllRelatedWaitForList(transactionID);
