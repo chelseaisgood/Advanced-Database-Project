@@ -165,10 +165,10 @@ public class Site {
         this.ifSiteWorking = false;
 
         // erase the lock table
-        System.out.println("Original size of lock table is " + this.lockTableOfSite.getLockTable().size());
-        System.out.println("Deleting all entries from lock table of Site " + this.getSiteID());
+        //System.out.println("Original size of lock table is " + this.lockTableOfSite.getLockTable().size());
+        //System.out.println("Deleting all entries from lock table of Site " + this.getSiteID());
         this.lockTableOfSite = new LockTable();
-        System.out.println("Now size of lock table becomes " + this.lockTableOfSite.getLockTable().size());
+        //System.out.println("Now size of lock table becomes " + this.lockTableOfSite.getLockTable().size());
     }
 
     public void recoverThisSite() {

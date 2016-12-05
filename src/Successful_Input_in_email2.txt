@@ -1,0 +1,5 @@
+beginRO(T1)
+R(T1, x1)
+fail(2)
+end(T1)
+dump()
