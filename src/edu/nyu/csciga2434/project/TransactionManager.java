@@ -121,9 +121,15 @@ public class TransactionManager {
             return;
         }
         List<Integer> deadLockAbortTransactionIDList = deadLockRemoval(waitForList);
+
         if (deadLockAbortTransactionIDList.size() == 0) {
             System.out.println("[Report] No deadlock is found.");
         }
+
+        for (Integer abortID : deadLockAbortTransactionIDList) {
+            System.out.println("Transaction T" + abortID + " should be aborted to break the deadlocks");
+        }
+
         deadLockAbortTransactionIDList.forEach(this::abort);
         //printSiteLockTable();
     }
@@ -1384,9 +1390,9 @@ public class TransactionManager {
         for (int index : tempHashSet) {
             int translatedIndex = list.get(index);
             result.add(translatedIndex);
-            System.out.println("Translated Index #" + translatedIndex + " is translated!" );
+            //System.out.println("Translated Index #" + translatedIndex + " is translated!" );
         }
-        System.out.println("One translation is done!");
+        //System.out.println("One translation is done!");
         return result;
     }
 
