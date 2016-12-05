@@ -350,12 +350,14 @@ public class TransactionManager {
         }
     }
 
+
     /**
      *  Put successfully executed operation into site transaction history
      */
     private void insertIntoSiteTransactionHistory(int siteID, Operation op) {
         this.SiteTransactionHistory.get(siteID).add(op);
     }
+
 
     /**
      *  Put wait for relation into wait for relation list
@@ -364,12 +366,14 @@ public class TransactionManager {
         this.waitForList.add(waitFor);
     }
 
+
     /**
      *  Put buffered operation into operation wait list
      */
     private void insertIntoBufferedWaitList(BufferedOperation bufferedOperation) {
         this.bufferedWaitList.add(bufferedOperation);
     }
+
 
     /**
      *  Check if there exists any conflicting WRITE type buffered operation in the buffered operation list
@@ -525,6 +529,8 @@ public class TransactionManager {
         }
 
         // judge if all up site that has this variable all have a write lock hold by this transaction
+        // if does, then it can write to variables
+        // otherwise, it's not the right time to write to variables
         boolean ifAllHaveAWriteLock = true;
         for (int siteID = 1; siteID <= DEFAULT_SITE_TOTAL_NUMBER; siteID++) {
             Site tempSite = this.sites.get(siteID);
@@ -552,6 +558,13 @@ public class TransactionManager {
                     + " on all up sites has their uncommitted value to be " + value
                     + " by transaction T" + transactionID + " and it have already had all the locks.");
         } else {
+            // TODO
+            // TODO
+            // TODO
+            // TODO
+            // TODO
+            // TODO
+            // TODO
             // boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
             // System.out.println("T" + transactionID + " & " + "x" + variableID);
             if (!findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
@@ -568,6 +581,9 @@ public class TransactionManager {
                         + " by transaction T" + transactionID + " and it have already had all the locks.");
             }
             else {
+                System.out.println("[Trace] !!!!!!!!!!!!!!!!!!");
+                getAllWriteLockedOnLockableVariableAllUpSitesByThisTransaction(transactionID, variableID);
+
                 //There is some conflicting lock
                 ConflictingBufferedQueryReturn queryReturnNew = findExistingAnyConflictingLockOnAllUpSites(transactionID, variableID);
                 int blockedTransactionID = queryReturnNew.getBufferedConflictingTransactionID();
@@ -579,6 +595,8 @@ public class TransactionManager {
             }
         }
     }
+
+
 
 
     /**
@@ -621,6 +639,46 @@ public class TransactionManager {
 
     /**
      *  Get all variables get a write lock by this transaction
+     */
+    private void getAllWriteLockedOnLockableVariableAllUpSitesByThisTransaction(int transactionID, int variableID) {
+        for (int siteID = 1; siteID <= DEFAULT_SITE_TOTAL_NUMBER; siteID++) {
+            Site tempSite = this.sites.get(siteID);
+            if (tempSite.getIfSiteWorking() && tempSite.ifContainsVariable(variableID)) {
+                List<LockOnVariable> lockListOnThisVariable = tempSite.getLockTableOfSite().getAllLocksOnVariable(variableID);
+                if (lockListOnThisVariable.size() == 0) {
+                    tempSite.getLockTableOfSite().addLock(variableID, transactionID, TypeOfLock.Write);
+                    System.out.println("At Site " + siteID + ", a WRITE lock on Variable x" + variableID
+                            + " is added by Transaction T" + transactionID + ".");
+                } else {
+                    boolean canGetAWriteLock = true;
+                    for (LockOnVariable lock : lockListOnThisVariable) {
+                        // TODO
+                        if ( lock.getTransactionID() != transactionID) {
+                            System.out.println("AAAAAAAAt Site " + siteID + ", a WRITE lock on Variable x" + variableID
+                                    + " cannot be added by Transaction T" + transactionID + ".");
+                            canGetAWriteLock = false;
+                            break;
+                        }
+                    }
+                    if (canGetAWriteLock) {
+                        LockOnVariable thisLock = lockListOnThisVariable.get(0);
+                        if (thisLock.getLockType() == TypeOfLock.Read) {
+                            tempSite.getLockTableOfSite().updateReadLockToWriteLock(variableID, transactionID);
+                            System.out.println("At Site " + siteID + ", a READ lock on Variable x" + variableID
+                                    + " is upgraded to a WRITE one by Transaction T" + transactionID + ".");
+                        } else {
+                            System.out.println("At Site " + siteID + ", a WRITE lock on Variable x" + variableID
+                                    + " is already get by Transaction T" + transactionID + ".");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     *  Get all variables which can have a write lock on to get a write lock by this transaction
      */
     private void getAllWriteLockedOnAllUpSitesByThisTransaction(int transactionID, int variableID) {
         for (int siteID = 1; siteID <= DEFAULT_SITE_TOTAL_NUMBER; siteID++) {
@@ -868,8 +926,8 @@ public class TransactionManager {
     private void failSite(int siteID) {
         if (this.sites.containsKey(siteID) && this.sites.get(siteID).getIfSiteWorking()) {
             System.out.println("[Down] Site " + siteID + " is now failed.");
-            this.sites.get(siteID).failThisSite();
             List<Integer> affectedTransactionList = outputAffectedTransactionList(siteID);
+            this.sites.get(siteID).failThisSite();
             // export all affected transaction id to the list of transactions to be aborted
             this.toBeAbortedList.addAll(affectedTransactionList);
             // reset Site History Record
@@ -885,20 +943,56 @@ public class TransactionManager {
      *  Output the affected transaction list when one site fails
      */
     private List<Integer> outputAffectedTransactionList(int siteID) {
-        List<Operation> tempList = this.SiteTransactionHistory.get(siteID);
-        List<Integer> resultList = new ArrayList<>();
+
+        Site tempSite = this.sites.get(siteID);
+        List<LockOnVariable> lockTable = tempSite.getLockTableOfSite().getLockTable();
         Set<Integer> set = new HashSet<>();
+        List<Integer> resultList = new ArrayList<>();
+
+        // if transaction has locks on the variables in this site, it should be considered as affected
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        for (LockOnVariable lock : lockTable) {
+            int tID = lock.getTransactionID();
+            if (!set.contains(tID)) {
+                set.add(tID);
+                System.out.println("Transaction T" + tID + " will be aborted!");
+                resultList.add(tID);
+            }
+        }
+
+        List<Operation> tempList = this.SiteTransactionHistory.get(siteID);
+
         // Operation(int transactionID, TypeOfOperation operationType,
         //              int siteID, int variableID, int value, int time)
         for (Operation o : tempList) {
             int tID = o.getTransactionID();
+            if (ifThisTransactionIsReadOnly(tID)) {
+                continue;
+            }
             if (!set.contains(tID)) {
                 set.add(tID);
+                System.out.println("Transaction T" + tID + " should be aborted!");
                 resultList.add(tID);
             }
         }
         return resultList;
     }
+
+
+    /**
+     *  Judge if this transaction is read-only or not
+     */
+    private boolean ifThisTransactionIsReadOnly(int tID) {
+        return this.currentTransactions.get(tID).getTransactionType() == TypeOfTransaction.Read_Only;
+    }
+
 
     /**
      *  Recover this site.
@@ -979,7 +1073,7 @@ public class TransactionManager {
             }
             List<LockOnVariable> table = tempSite.getLockTableOfSite().getLockTable();
 
-            List<Integer> indexList= new ArrayList<>();
+            List<LockOnVariable> indexList= new ArrayList<>();
             for (int j = 0; j < table.size(); j++) {
                 LockOnVariable lock = table.get(j);
                 String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
@@ -992,7 +1086,7 @@ public class TransactionManager {
                 }
 
                 if (lock.getLockType() == TypeOfLock.Read) {
-                    indexList.add(j);
+                    indexList.add(lock);
                     continue;
                 }
 
@@ -1000,15 +1094,16 @@ public class TransactionManager {
                     System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
                             + " held by Transaction T" + lock.getTransactionID() + "." );
                     //tempSite.ReverseTheWrite(lock);
-                    indexList.add(j);
+                    indexList.add(lock);
                 }
             }
 
-            Collections.sort(indexList);
-
-            for (int k = indexList.size() - 1; k >= 0; k--) {
-                tempSite.ReleaseThatLock(table.get(k));
-            }
+            table.removeAll(indexList);
+//            Collections.sort(indexList);
+//
+//            for (int k = indexList.size() - 1; k >= 0; k--) {
+//                tempSite.ReleaseThatLock(table.get(k));
+//            }
         }
     }
 
