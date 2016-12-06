@@ -6,6 +6,8 @@ import java.util.Comparator;
  * User: Minda Fang
  * Date: 12/1/16
  * Time: 8:39 PM
+ *
+ * Used for sorting wait-for relations according to their transaction ID
  */
 
 public class WaitForsComparator implements Comparator<WaitFor> {

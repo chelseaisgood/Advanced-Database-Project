@@ -5,6 +5,7 @@ package edu.nyu.csciga2434.project;
  * Date: 10/31/16
  * Time: 11:24 PM
  *
+ * Used for indicating the type of a lock
  */
 
 public enum TypeOfLock{

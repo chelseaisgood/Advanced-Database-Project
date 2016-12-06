@@ -5,6 +5,14 @@ package edu.nyu.csciga2434.project;
  * Date: 11/29/16
  * Time: 10:28 PM
  *
+ * Used for constructing an operation recording detailed operation information
+ * Inside each operation,
+ * there is
+ * a field for transaction ID,
+ * a field for type of operation,
+ * a field for site ID which records in which site this operation happens,
+ * a field for variable ID, a field for read/write value,
+ * a field for operation successfully executed time.
  */
 
 public class Operation {

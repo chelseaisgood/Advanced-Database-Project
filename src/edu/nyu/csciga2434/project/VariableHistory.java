@@ -5,6 +5,7 @@ package edu.nyu.csciga2434.project;
  * Date: 11/29/16
  * Time: 3:00 PM
  *
+ * Inside each variable history,there is a field for the value, and time field for recording the committed time of this value.
  */
 public class VariableHistory {
 

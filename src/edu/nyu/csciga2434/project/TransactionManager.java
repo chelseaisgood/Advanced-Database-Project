@@ -67,13 +67,13 @@ public class TransactionManager {
 
         // processing buffered operations before reading in the next line of commands
         if (oldBufferedWaitList.size() != 0) {
-            System.out.println("[Report] The size of the buffered wait list is " + oldBufferedWaitList.size() + " at the end of time " + (time - 1) +".");
+            //System.out.println("[Report] The size of the buffered wait list is " + oldBufferedWaitList.size() + " at the end of time " + (time - 1) +".");
 
             // processing buffered operations according to the sequence of buffered time
             Collections.sort(oldBufferedWaitList, new BufferedOperationComparator());
             oldBufferedWaitList.forEach(this::processThisBufferedOperation);
 
-            System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +" after processing all buffered operations.");
+            //System.out.println("[Report] The size of the buffered wait list is " + bufferedWaitList.size() + " at time " + time +" after processing all buffered operations.");
         }
 
         // process new read in command line
@@ -81,7 +81,7 @@ public class TransactionManager {
         ArrayList<Integer> endTransactionList = new ArrayList<>();
         for (String opRaw : operations) {
             String op = opRaw.trim();
-            System.out.println("[New Command] " + op);
+            System.out.println("\n" + "[New Command] " + op);
             if (op.startsWith("begin(")) {
                 begin(Integer.parseInt(op.substring(7, op.length() - 1)), TypeOfTransaction.Read_Write);
             } else if (op.startsWith("beginRO(")) {
@@ -296,7 +296,7 @@ public class TransactionManager {
                 if (!tempSite.getIfSiteWorking()) {
                     continue;
                 }
-                if (!tempSite.ifHaveThisVariable(variableID)) {
+                if (!tempSite.ifContainsVariable(variableID)) {
                     continue;
                 }
                 LockTable tempLockTable = tempSite.getLockTableOfSite();
@@ -413,7 +413,7 @@ public class TransactionManager {
             if (!tempSite.getIfSiteWorking()) {
                 continue;
             }
-            if (!tempSite.ifHaveThisVariable(variableID)) {
+            if (!tempSite.ifContainsVariable(variableID)) {
                 continue;
             }
             int currentValueRead = tempSite.returnThisVariableCurrentValue(variableID);
@@ -560,7 +560,7 @@ public class TransactionManager {
             if (!tempSite.getIfSiteWorking()) {
                 continue;
             }
-            if (!tempSite.ifHaveThisVariable(variableID)) {
+            if (!tempSite.ifContainsVariable(variableID)) {
                 continue;
             }
             LockTable tempLockTable = tempSite.getLockTableOfSite();
@@ -581,13 +581,6 @@ public class TransactionManager {
                     + " on all up sites has their uncommitted value to be " + value
                     + " by transaction T" + transactionID + " and it have already had all the locks.");
         } else {
-            // TODO
-            // TODO
-            // TODO
-            // TODO
-            // TODO
-            // TODO
-            // TODO
             // boolean ifThisTransactionCanHaveWriteLockOnAllUpSites = findIfExistsConflictLockOnAllUpSites(transactionID, variableID);
             // System.out.println("T" + transactionID + " & " + "x" + variableID);
             if (!findIfExistsConflictLockOnAllUpSites(transactionID, variableID)) {
@@ -595,7 +588,7 @@ public class TransactionManager {
                 getAllWriteLockedOnAllUpSitesByThisTransaction(transactionID, variableID);
                 writeToAllUpSites(transactionID, variableID, value, opTime);
                 int siteID = 0; //don't care
-                Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+                Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, time);
                 // insertIntoSiteTransactionHistory(siteID, op);
                 // This step is done is the writeToAllUpSites function
                 transaction.addToOperationHistory(op);
@@ -675,7 +668,6 @@ public class TransactionManager {
                 } else {
                     boolean canGetAWriteLock = true;
                     for (LockOnVariable lock : lockListOnThisVariable) {
-                        // TODO
                         if ( lock.getTransactionID() != transactionID) {
                             System.out.println("[Fail to add lock] At Site " + siteID + ", a WRITE lock on Variable x" + variableID
                                     + " cannot be added by Transaction T" + transactionID + ".");
@@ -851,17 +843,17 @@ public class TransactionManager {
                     }
 
                     if (lock.getLockType() == TypeOfLock.Read) {
-                        System.out.println("Starting to release read lock on variable x" + lock.getVariableID()
-                                + " held by Transaction T" + lock.getTransactionID()
-                                + " at Site " + tempSite.getSiteID() + "." );
+//                        System.out.println("Starting to release read lock on variable x" + lock.getVariableID()
+//                                + " held by Transaction T" + lock.getTransactionID()
+//                                + " at Site " + tempSite.getSiteID() + "." );
                         indexList.add(lock);
                         continue;
                     }
 
                     if (lock.getLockType() == TypeOfLock.Write) {
-                        System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
-                                + " held by Transaction T" + lock.getTransactionID()
-                                + " at Site " + tempSite.getSiteID() + "." );
+//                        System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
+//                                + " held by Transaction T" + lock.getTransactionID()
+//                                + " at Site " + tempSite.getSiteID() + "." );
                         tempSite.CommitTheWrite(lock, time);
                         indexList.add(lock);
                     }
@@ -929,7 +921,7 @@ public class TransactionManager {
     private void reportTransaction(int transactionID) {
         Transaction transaction = this.currentTransactions.get(transactionID);
         List<Operation> listHistory = transaction.getOperationHistory();
-        System.out.println("\n" + "[Report] Now reporting all the execution records of Transaction T" + transactionID + ":");
+        System.out.println("[Report] Now reporting all the execution records of Transaction T" + transactionID + ":");
         if (listHistory.size() == 0) {
             System.out.println("[Report] This Transaction T" + transactionID + " seems to have no actions.");
             return;
@@ -949,7 +941,7 @@ public class TransactionManager {
                         + " in all available Sites at Time " + operation.getTime() + ".");
             }
         }
-        System.out.println(" ");
+        //System.out.println(" ");
     }
 
 
@@ -1003,7 +995,7 @@ public class TransactionManager {
             int tID = lock.getTransactionID();
             if (!set.contains(tID)) {
                 set.add(tID);
-                System.out.println("Transaction T" + tID + " will be aborted!");
+                System.out.println("Transaction T" + tID + " should be aborted!");
                 resultList.add(tID);
             }
         }
@@ -1117,15 +1109,15 @@ public class TransactionManager {
             List<LockOnVariable> indexList= new ArrayList<>();
             for (int j = 0; j < table.size(); j++) {
                 LockOnVariable lock = table.get(j);
-                String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
+                //String typeOfLock = (lock.getLockType() == TypeOfLock.Read) ? "Read" : "Write";
 
                 if (lock.getTransactionID() != abortTransactionID) {
                     continue;
                 }
 
-                System.out.println("At site " + tempSite.getSiteID()
-                        + ", Transaction T" + lock.getTransactionID()
-                        + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
+//                System.out.println("At site " + tempSite.getSiteID()
+//                        + ", Transaction T" + lock.getTransactionID()
+//                        + " holds a " + typeOfLock + " lock on variable x" + lock.getVariableID() + ".");
 
                 if (lock.getLockType() == TypeOfLock.Read) {
                     indexList.add(lock);
@@ -1133,8 +1125,8 @@ public class TransactionManager {
                 }
 
                 if (lock.getLockType() == TypeOfLock.Write) {
-                    System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
-                            + " held by Transaction T" + lock.getTransactionID() + "." );
+//                    System.out.println("Starting to release write lock on variable x" + lock.getVariableID()
+//                            + " held by Transaction T" + lock.getTransactionID() + "." );
                     //tempSite.ReverseTheWrite(lock);
                     indexList.add(lock);
                 }
@@ -1196,10 +1188,10 @@ public class TransactionManager {
 
     /**Parts with the deadlock checking
      * 1. given wait-for lists
-     * 2. generate matrix
-     * 3. if exists cycle {
-     * 4.   find one path
-     * 5.   find one to abort
+     * 2. generate adjacency matrix for directed wait-for graph
+     * 3. while there exists cycle in that directed graph {
+     * 4.   find one cycle
+     * 5.   decide which one on the cycle to abort
      * 6.   export that one to abortList
      * 7.   revise the matrix
      * 8. }

@@ -9,6 +9,15 @@ import java.util.List;
  * Time: 12:00 PM
  *
  * Each variable xi is initialized to the value 10*i
+ *
+ * Inside each variable,
+ * there is
+ * a field for its ID,
+ * a field for its last committed value,
+ * a field for the available for reading state,
+ * a list for the committed value history,
+ * a field for its latest written value,
+ * a field for indicating if it is replicated or non-replicated.
  */
 
 public class Variable {

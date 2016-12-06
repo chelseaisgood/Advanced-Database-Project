@@ -5,6 +5,7 @@ package edu.nyu.csciga2434.project;
  * Date: 10/31/16
  * Time: 2:47 PM
  *
+ * Inside each lock, there is a field for transaction ID, a field for variable ID, and a field for lock type.
  */
 
 public class LockOnVariable {

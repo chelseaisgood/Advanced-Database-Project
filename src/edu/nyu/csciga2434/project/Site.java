@@ -49,6 +49,10 @@ public class Site {
         this.ifSiteWorking = true;
     }
 
+
+    /**
+     *  build this site, create replicated or non-replicated copy of a variable
+     */
     private void BuildSite(){
         // call BuildSite() when the site is first set and include all the variables that should be initially held by this site.
         for (int i = 1; i <= DEFAULT_VARIABLE_TOTAL_NUMBER; i++){
@@ -62,6 +66,10 @@ public class Site {
         }
     }
 
+
+    /**
+     *  output variable value in this site
+     */
     public String dumpOutput() {
         StringBuffer dumpOutput = new StringBuffer();
         for (int i = 0; i < variableList.size(); i++) {
@@ -72,8 +80,9 @@ public class Site {
     }
 
 
-
-
+    /**
+     *  return true if this site contains requested variable
+     */
     public boolean ifContainsVariable(int variableID) {
         List<Variable> list = this.getVariableList();
         for (Variable var : list) {
@@ -84,6 +93,10 @@ public class Site {
         return false;
     }
 
+
+    /**
+     *  return true if requested variable is available for reading at this moment
+     */
     public boolean ifThisVariableIsAvailable(int variableID) {
         List<Variable> list = this.getVariableList();
         for (Variable var : list) {
@@ -94,10 +107,15 @@ public class Site {
         return false;
     }
 
+
+    /**
+     *  write value to variable's uncommitted value field
+     */
     public void writeToVariableCurrValueInThisSite(int variableID, int value) {
         List<Variable> list = this.getALLVariables();
         for (Variable var : list) {
             if (var.getID() == variableID) {
+                var.setAvailableForReading(true);
                 var.setCurrValue(value);
                 System.out.println("[Success] Variable x" + variableID + " at Site " + this.id + " has temporary uncommitted value: " + var.getCurrValue() + ".");
                 return;
@@ -105,18 +123,10 @@ public class Site {
         }
     }
 
-    /**
-     *  return true if this site contains the required variable
-     */
-    public boolean ifHaveThisVariable(int variableID) {
-        for(Variable var : this.variableList) {
-            if (var.getID() == variableID) {
-                return true;
-            }
-        }
-        return false;
-    }
 
+    /**
+     *  return this variable's current uncommitted value
+     */
     public int returnThisVariableCurrentValue(int variableID) {
         int result = 0;
         for(Variable var : this.variableList) {
@@ -128,6 +138,9 @@ public class Site {
     }
 
 
+    /**
+     *  return this variable's latest committed value
+     */
     public int returnThisVariableValue(int variableID) {
         int result = 0;
         for(Variable var : this.variableList) {
@@ -139,12 +152,19 @@ public class Site {
     }
 
 
-    public void ReleaseThatLock(LockOnVariable lock) {
+    /**
+     *  release the specific lock
+     */
+    public void releaseThatLock(LockOnVariable lock) {
         lockTableOfSite.deleteThisLock(lock);
     }
 
+
+    /**
+     *  have uncommitted value committed
+     */
     public void CommitTheWrite(LockOnVariable lock, int commitTime) {
-        if ( !ifHaveThisVariable(lock.getVariableID())) {
+        if ( !ifContainsVariable(lock.getVariableID())) {
             System.out.println("[Failure] Cannot find this variable x" + lock.getVariableID() + " in this site " + id + ".");
             return;
         }
@@ -161,6 +181,9 @@ public class Site {
     }
 
 
+    /**
+     *  fail this site
+     */
     public void failThisSite() {
         this.ifSiteWorking = false;
 
@@ -171,6 +194,10 @@ public class Site {
         //System.out.println("Now size of lock table becomes " + this.lockTableOfSite.getLockTable().size());
     }
 
+
+    /**
+     *  recover this site
+     */
     public void recoverThisSite() {
         System.out.println("[Recover] This site " + this.getSiteID() + " is recovered.");
         this.ifSiteWorking = true;

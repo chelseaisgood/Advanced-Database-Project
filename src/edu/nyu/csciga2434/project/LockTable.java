@@ -21,6 +21,7 @@ public class LockTable {
         return this.lockTable;
     }
 
+
     /**
      * Judge if transaction has this type of lock on this variable by checking the lock table
      */
@@ -56,6 +57,10 @@ public class LockTable {
 //        }
 //    }
 
+
+    /**
+     * Get the all the locks on requested variable
+     */
     public List<LockOnVariable> getAllLocksOnVariable(int variableID) {
         List<LockOnVariable> result = new ArrayList<>();
         for (LockOnVariable lock : this.lockTable) {
@@ -66,12 +71,20 @@ public class LockTable {
         return result;
     }
 
+
+    /**
+     * Add a specific type of lock on one variable by one transaction
+     */
     public void addLock(int variableID, int transactionID, TypeOfLock lockType) {
         LockOnVariable tempLock = new LockOnVariable(transactionID, variableID, lockType);
         //System.out.println(tempLock.getLockType() +"+"+ tempLock.getTransactionID()+"+"+tempLock.getVariableID());
         this.lockTable.add(tempLock);
     }
 
+
+    /**
+     * Return true if this transaction has a write lock on that variable
+     */
     public boolean ifThisTransactionHasWriteLockInThisLockTable(int transactionID) {
         for (LockOnVariable lock : this.lockTable) {
             if (lock.getTransactionID() == transactionID) {
@@ -81,11 +94,19 @@ public class LockTable {
         return false;
     }
 
+
+    /**
+     * Upgrade the read lock on that variable to write one
+     */
     public void updateReadLockToWriteLock(int variableID, int transactionID) {
         LockOnVariable lock = getAllLocksOnVariable(variableID).get(0);
         lock.setLockType(TypeOfLock.Write);
     }
 
+
+    /**
+     * Delete a lock in this lockable
+     */
     public void deleteThisLock(LockOnVariable lock) {
         int index = Integer.MIN_VALUE;
         for (int i = 0; i < lockTable.size(); i++) {

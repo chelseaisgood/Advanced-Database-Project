@@ -6,6 +6,8 @@ import java.util.Comparator;
  * User: Minda Fang
  * Date: 12/2/16
  * Time: 5:49 PM
+ *
+ * Used for sorting buffered operations according to their buffered time
  */
 public class BufferedOperationComparator implements Comparator<BufferedOperation> {
     @Override
