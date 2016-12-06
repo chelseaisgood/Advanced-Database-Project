@@ -1,0 +1,12 @@
+begin(T1); begin(T3)
+beginRO(T2); begin(T4);
+R(T1, x11)
+W(T3, x11, 1234)
+R(T1, x1); R(T4, x8)
+fail(3);fail(4);fail(5);fail(6);fail(7);fail(8);fail(9);fail(10);fail(1)
+W(T1, x8, 6543)
+recover(3);recover(4);recover(5);recover(6);recover(7);recover(8);recover(9);recover(10);recover(1)
+W(T1, x1, 12345)
+R(T4, x1); end(T1)
+dump(x1)
+dump(x8)

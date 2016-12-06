@@ -1,0 +1,7 @@
+For testing, please go under the directory "/src"
+
+rm edu/nyu/csciga2434/project/*.class  (remove all .class file for recompiling)
+
+javac edu/nyu/csciga2434/project/Test.java
+
+java edu.nyu.csciga2434.project.Test Input.txt
