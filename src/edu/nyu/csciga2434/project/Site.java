@@ -173,7 +173,7 @@ public class Site {
             if (var.getID() == tempVariableID) {
                 int valueNew = var.getCurrValue();
                 var.setValue(valueNew);
-                System.out.println("Now this variable to be updated is x" + tempVariableID + " with new value " + var.getValue() + " at time " + commitTime + ".");
+                System.out.println("Now this variable to be updated is x" + tempVariableID + " at Site" + this.id + " with new value " + var.getValue() + " at time " + commitTime + ".");
                 var.getVariableHistoryList().add(new VariableHistory(valueNew, commitTime));
                 return;
             }

@@ -20,6 +20,7 @@ public class Test {
     }
 
     private static void parseInput(String input) {
+        System.out.println("[New Test] Advanced Database Project New round of testing starts! By Minda Fang and Kim Tae Young.");
         try {
             FileReader fileReader = new FileReader(input);
             Scanner scanner = new Scanner(fileReader);
