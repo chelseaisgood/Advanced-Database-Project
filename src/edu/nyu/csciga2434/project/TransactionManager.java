@@ -235,7 +235,7 @@ public class TransactionManager {
                             // get read value from the chosen record in the variable's record history
                             int readValue = variableHistory.get(maxIndex).getValue();
                             System.out.println("[Success] The snapshot value of variable x" + variableID + " in Site " + siteID + " is " + readValue + ".");
-                            Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                            Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, time);
                             // put successful operation into SiteTransactionHistory record stored inside this Transaction Manager
                             insertIntoSiteTransactionHistory(siteID, op);
                             // put successful operation into operationHistory record stored inside every transaction
@@ -318,7 +318,7 @@ public class TransactionManager {
                 System.out.println("[Success] The value of variable x" + variableID
                         + " read by Transaction T" + transactionID + " from Site " + siteID + " is " + readValue + ".");
                 // do not need to require for a read lock since a write lock is already got
-                Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, time);
                 // insert this operation into site transaction history
                 insertIntoSiteTransactionHistory(siteID, op);
                 // insert this operation into transaction history
@@ -343,7 +343,7 @@ public class TransactionManager {
                 getOneReadLockedOnThisVariableInThisSiteByThisTransaction(siteID, transactionID, variableID);
 
                 // Operation(int transactionID, TypeOfOperation operationType, int siteID, int variableID, int value, int time)
-                Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, opTime);
+                Operation op = new Operation(transactionID, TypeOfOperation.OP_READ, siteID, variableID, readValue, time);
                 insertIntoSiteTransactionHistory(siteID, op);
                 transaction.addToOperationHistory(op);
                 System.out.println("[Success] The value of variable x" + variableID
@@ -574,7 +574,7 @@ public class TransactionManager {
             // This transaction has all the write locks that it needs, which means it can write now.
             this.writeToAllUpSites(transactionID, variableID, value, opTime);
             int siteID = 0; //don't care
-            Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, opTime);
+            Operation op = new Operation(transactionID, TypeOfOperation.OP_WRITE, siteID, variableID, value, time);
             insertIntoSiteTransactionHistory(siteID, op);
             transaction.addToOperationHistory(op);
             System.out.println("[Success] Variable x" + variableID
